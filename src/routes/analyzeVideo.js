@@ -21,6 +21,7 @@ route.post(
     try {
       const resizedVideoBuffer = await resizeVideoBuffer(req.body);
       const durationIsValid = await checkVideoDuration(resizedVideoBuffer);
+
       if (!durationIsValid) {
         return res.status(400).json({
           message: "Video must be between 5 and 30 seconds in length.",
@@ -30,6 +31,7 @@ route.post(
       const { status: videoIsSafe } = await checkVideoSafety(
         resizedVideoBuffer
       );
+
       if (!videoIsSafe) {
         return res
           .status(400)
@@ -37,9 +39,8 @@ route.post(
       }
 
       const transcription = await transcribeVideoBuffer(resizedVideoBuffer);
-      const { verdict: textIsSafe, reasoning } = await checkTextSafety(
-        transcription
-      );
+      const { verdict: textIsSafe } = await checkTextSafety(transcription);
+
       if (!textIsSafe) {
         return res
           .status(400)

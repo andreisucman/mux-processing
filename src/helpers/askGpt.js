@@ -1,10 +1,11 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import { openai } from "../init.js";
 
-async function askGpt({ messages, maxTokens, isMini, seed, isJson = true }) {
+async function askGpt({ messages, maxTokens, isMini, isJson = true }) {
   try {
     const options = {
       messages,
-      seed,
       model: isMini ? process.env.MODEL_MINI : process.env.MODEL,
       temperature: 0,
       max_tokens: maxTokens,
@@ -13,8 +14,6 @@ async function askGpt({ messages, maxTokens, isMini, seed, isJson = true }) {
     if (isJson) options.response_format = { type: "json_object" };
 
     const completion = await openai.chat.completions.create(options);
-
-    console.log("isMini", isMini || false, completion.usage.total_tokens);
 
     return {
       result: isJson

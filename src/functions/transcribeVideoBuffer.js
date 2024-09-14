@@ -1,7 +1,8 @@
 import fs from "fs";
+import tmp from "tmp";
 import ffmpeg from "fluent-ffmpeg";
 import { openai } from "../init.js";
-import tmp from "tmp";
+import doWithRetries from "../helpers/doWithRetries.js";
 
 export default async function transcribeVideoBuffer(videoBuffer) {
   let tempVideoFile;
@@ -14,26 +15,33 @@ export default async function transcribeVideoBuffer(videoBuffer) {
     const videoFilePath = tempVideoFile.name;
     const audioFilePath = tempAudioFile.name;
 
-    await fs.promises.writeFile(videoFilePath, videoBuffer);
-
-    await new Promise((resolve, reject) => {
-      ffmpeg(videoFilePath)
-        .noVideo()
-        .audioCodec("pcm_s16le")
-        .format("wav")
-        .on("end", resolve)
-        .on("error", reject)
-        .save(audioFilePath);
+    await doWithRetries({
+      functionToExecute: () =>
+        fs.promises.writeFile(videoFilePath, videoBuffer),
     });
 
-    const response = await openai.createTranscription(
-      fs.createReadStream(audioFilePath),
-      "whisper-1"
-    );
+    await doWithRetries({
+      functionToExecute: () =>
+        new Promise((resolve, reject) => {
+          ffmpeg(videoFilePath)
+            .noVideo()
+            .audioCodec("pcm_s16le")
+            .format("wav")
+            .on("end", resolve)
+            .on("error", reject)
+            .save(audioFilePath);
+        }),
+    });
 
-    const transcript = response.data.text;
+    const response = await doWithRetries({
+      functionToExecute: () =>
+        openai.audio.transcriptions.create({
+          file: fs.createReadStream(audioFilePath),
+          model: "whisper-1",
+        }),
+    });
 
-    return transcript;
+    return response.text;
   } catch (error) {
     console.error("Error processing video:", error);
     throw error;

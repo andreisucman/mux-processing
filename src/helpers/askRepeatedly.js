@@ -13,8 +13,6 @@ async function askRepeatedly({ runs, systemContent, isResultString }) {
         functionName: "askRepeatedly - askGpt",
         functionToExecute: async () =>
           askGpt({
-            seed,
-            userId,
             messages: conversation,
             isMini: runs[i].isMini,
             isJson: isResultString ? false : i === runs.length - 1,

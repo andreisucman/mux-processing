@@ -13,7 +13,8 @@ async function checkVideoDuration(buffer) {
   try {
     await writeFileAsync(tempFilePath, buffer);
 
-    return new Promise((resolve, reject) => {
+    // Await the ffprobe call to ensure it completes before proceeding
+    const result = await new Promise((resolve, reject) => {
       ffmpeg.ffprobe(tempFilePath, (err, metadata) => {
         if (err) {
           return reject(err);
@@ -28,7 +29,10 @@ async function checkVideoDuration(buffer) {
         }
       });
     });
+
+    return result;
   } finally {
+    // Delete the temporary file after ffprobe has finished
     await unlinkAsync(tempFilePath);
   }
 }
