@@ -46,8 +46,8 @@ const extractFrames = async (videoBuffer) => {
 
     // Calculate the times to extract frames over the whole duration
     const frameTimes = [];
-    for (let i = 0; i < 10; i++) {
-      const time = (duration * i) / 9;
+    for (let i = 0; i < 5; i++) {
+      const time = (duration * i) / 4;
       frameTimes.push(time);
     }
 

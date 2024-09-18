@@ -20,6 +20,7 @@ async function askRepeatedly({ runs, systemContent, isResultString }) {
       });
 
       result = response.result;
+      console.log("result", result)
 
       conversation.push({
         role: "assistant",
