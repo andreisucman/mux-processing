@@ -47,7 +47,7 @@ const extractFrames = async (videoBuffer) => {
     // Calculate the times to extract frames over the whole duration
     const frameTimes = [];
     for (let i = 0; i < 5; i++) {
-      const time = (duration * i) / 4;
+      const time = (duration * i) / 5;
       frameTimes.push(time);
     }
 
@@ -75,7 +75,6 @@ const extractFrames = async (videoBuffer) => {
               timestamps: frameTimes,
               filename: "frame-%02i.png",
               folder: tempDir,
-              size: "320x568",
             });
         }),
     });

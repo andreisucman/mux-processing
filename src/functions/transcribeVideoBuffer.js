@@ -9,6 +9,7 @@ export default async function transcribeVideoBuffer(videoBuffer) {
   let tempAudioFile;
 
   try {
+    console.log("transcribeVideoBuffer line 12");
     tempVideoFile = tmp.fileSync({ postfix: ".mp4" });
     tempAudioFile = tmp.fileSync({ postfix: ".wav" });
 
@@ -19,6 +20,7 @@ export default async function transcribeVideoBuffer(videoBuffer) {
       functionToExecute: () =>
         fs.promises.writeFile(videoFilePath, videoBuffer),
     });
+    console.log("transcribeVideoBuffer line 23");
 
     await doWithRetries({
       functionToExecute: () =>
@@ -33,13 +35,19 @@ export default async function transcribeVideoBuffer(videoBuffer) {
         }),
     });
 
+    console.log("transcribeVideoBuffer line 38");
+
     const response = await doWithRetries({
       functionToExecute: () =>
         openai.audio.transcriptions.create({
           file: fs.createReadStream(audioFilePath),
           model: "whisper-1",
+          temperature: 0,
+          prompt:
+            "The audio may contain silence. Do not make up words or symbols.",
         }),
     });
+    console.log("transcribeVideoBuffer line 50");
 
     return response.text;
   } catch (error) {

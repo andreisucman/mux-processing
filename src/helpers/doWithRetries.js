@@ -24,7 +24,7 @@ async function doWithRetries({
       });
     } else {
       console.log("Error:", error);
-      throw new Error(error);
+      throw error;
     }
   }
 }

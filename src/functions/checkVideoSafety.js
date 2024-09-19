@@ -1,162 +1,72 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import { s3ClientAws } from "../init.js";
-import { nanoid } from "nanoid";
 import os from "os";
 import path from "path";
-import fs from "fs";
+import fs from "fs/promises";
 import ffmpeg from "fluent-ffmpeg";
-import {
-  RekognitionClient,
-  StartContentModerationCommand,
-  GetContentModerationCommand,
-} from "@aws-sdk/client-rekognition";
-import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import checkForProhibitedContent from "../helpers/checkForProhibitedContent.js";
+import { nanoid } from "nanoid";
+import { checkForProhibitedContent } from "./checkProhibitedContent.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 
-const rekognitionClient = new RekognitionClient({
-  credentials: {
-    accessKeyId: process.env.AWS_REKOGNITION_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_REKOGNITION_SECRET_KEY,
-  },
-  region: process.env.AWS_REGION,
-});
+const tempDir = os.tmpdir();
 
-async function deleteFile(fileKey) {
-  try {
-    await doWithRetries({
-      functionToExecute: () =>
-        s3ClientAws.send(
-          new DeleteObjectCommand({
-            Bucket: process.env.AWS_REKOGNITION_BUCKET_NAME,
-            Key: fileKey,
-          })
-        ),
-    });
-  } catch (deleteErr) {
-    console.error("Error deleting video from S3:", deleteErr);
-    throw deleteErr;
-  }
-}
-
-async function convertVideo(inputBuffer) {
-  const tempDir = os.tmpdir();
+export default async function checkVideoSafety(buffer) {
   const inputFilePath = path.join(tempDir, `input-${nanoid()}`);
-  const outputFilePath = path.join(tempDir, `output-${nanoid()}.mp4`);
+  const framesDir = path.join(tempDir, `frames-${nanoid()}`);
 
   try {
     await doWithRetries({
-      functionToExecute: () =>
-        fs.promises.writeFile(inputFilePath, inputBuffer),
+      functionToExecute: () => fs.writeFile(inputFilePath, buffer),
     });
+
+    await fs.mkdir(framesDir, { recursive: true });
 
     await doWithRetries({
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg(inputFilePath)
-            .outputFormat("mp4")
-            .videoCodec("libopenh264")
-            .on("end", resolve)
-            .on("error", reject)
-            .save(outputFilePath);
+            .outputOptions("-vf", "fps=1")
+            .output(path.join(framesDir, "frame-%03d.jpg"))
+            .on("end", () => {
+              resolve();
+            })
+            .on("error", (err) => {
+              console.error("FFmpeg error:", err);
+              reject(err);
+            })
+            .run();
         }),
     });
 
-    const outputBuffer = await doWithRetries({
-      functionToExecute: () => fs.promises.readFile(outputFilePath),
-    });
-    return outputBuffer;
-  } finally {
-    await doWithRetries({
-      functionToExecute: () =>
-        Promise.all([
-          fs.promises.unlink(inputFilePath).catch(() => {}),
-          fs.promises.unlink(outputFilePath).catch(() => {}),
-        ]),
-    });
-  }
-}
+    const frameFiles = await fs.readdir(framesDir);
 
-export default async function checkVideoSafety(buffer) {
-  const convertedVideo = await doWithRetries({
-    functionName: "checkVideoSafety - analyzeVideo",
-    functionToExecute: () => convertVideo(buffer),
-  });
+    const frameFilePaths = frameFiles.map((file) => path.join(framesDir, file));
 
-  const extension = "mp4";
-  const fileKey = `${nanoid()}.${extension}`;
+    const isProhibited = await checkForProhibitedContent(frameFilePaths);
 
-  try {
-    try {
-      await doWithRetries({
-        functionToExecute: () =>
-          s3ClientAws.send(
-            new PutObjectCommand({
-              Bucket: process.env.AWS_REKOGNITION_BUCKET_NAME,
-              Key: fileKey,
-              Body: convertedVideo,
-            })
-          ),
-      });
-    } catch (err) {
-      console.error("Error uploading video to S3:", err);
-      throw err;
-    }
-
-    const moderationParams = {
-      Video: {
-        S3Object: {
-          Bucket: process.env.AWS_REKOGNITION_BUCKET_NAME,
-          Name: fileKey,
-        },
-      },
-      MinConfidence: 80,
-    };
-
-    const moderationCommand = new StartContentModerationCommand(
-      moderationParams
-    );
-
-    const moderationResponse = await rekognitionClient.send(moderationCommand);
-    const jobId = moderationResponse.JobId;
-
-    while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      const moderationStatusParams = { JobId: jobId };
-      const moderationStatusCommand = new GetContentModerationCommand(
-        moderationStatusParams
-      );
-      const moderationStatusResponse = await rekognitionClient.send(
-        moderationStatusCommand
-      );
-      const status = moderationStatusResponse.JobStatus;
-
-      if (status === "SUCCEEDED") {
-        const moderationLabels = moderationStatusResponse.ModerationLabels;
-
-        const isProhibited = checkForProhibitedContent(moderationLabels);
-
-        await deleteFile(fileKey);
-
-        if (isProhibited) {
-          return {
-            status: false,
-            message: "Video contains prohibited content",
-          };
-        }
-
-        return {
-          status: true,
-        };
-      } else if (status === "FAILED" || status === "STOPPED") {
-        await deleteFile(fileKey);
-        return { status: null, message: "Error during video processing" };
-      }
+    if (isProhibited) {
+      return {
+        status: false,
+        message: "Video contains prohibited content",
+      };
+    } else {
+      return {
+        status: true,
+      };
     }
   } catch (err) {
     console.error("Error in checking video safety:", err);
     throw err;
+  } finally {
+    try {
+      await fs.unlink(inputFilePath).catch((e) => {
+        console.warn(`Failed to delete input file: ${inputFilePath}`, e);
+      });
+      await fs.rm(framesDir, { recursive: true, force: true }).catch((e) => {
+        console.warn(`Failed to delete frames directory: ${framesDir}`, e);
+      });
+    } catch (cleanupErr) {
+      console.error("Error during cleanup:", cleanupErr);
+    }
   }
 }

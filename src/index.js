@@ -10,7 +10,7 @@ client.connect();
 const app = express();
 app.set("trust proxy", 1);
 app.use(express.json());
-app.use("/analyzeVideo", timeout("3m"), analyzeVideo);
+app.use("/analyzeVideo", timeout("10m"), analyzeVideo);
 
 app.use("*", setHeaders);
 app.get("/", (req, res) => {
