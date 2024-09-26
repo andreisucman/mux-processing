@@ -38,8 +38,17 @@ export default async function resizeVideoBuffer(inputBuffer) {
         }),
     });
 
-    const { width: originalWidth, height: originalHeight } =
-      metadata.streams[0] || {};
+    // Find the video stream
+    const videoStream = metadata.streams.find(
+      (stream) => stream.codec_type === "video"
+    );
+
+    if (!videoStream) {
+      throw new Error("No video stream found in the media file");
+    }
+
+    const originalWidth = videoStream.width || videoStream.coded_width;
+    const originalHeight = videoStream.height || videoStream.coded_height;
 
     if (!originalWidth || !originalHeight) {
       throw new Error("Unable to determine video dimensions");

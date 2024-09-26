@@ -1,7 +1,10 @@
 import { FormData, File } from "formdata-node";
+import * as dotenv from "dotenv";
 import mime from "mime-types";
 import fs from "fs/promises";
 import path from "path";
+
+dotenv.config();
 
 const getMimeType = (filePath) => {
   return mime.lookup(filePath) || "application/octet-stream";
@@ -33,7 +36,7 @@ export async function checkForProhibitedContent(arrayOfFiles) {
     }
 
     const response = await fetch(
-      "http://localhost:3333/multiple/multipart-form",
+      `${process.env.MODERATION_SERVER_URL}/multiple/multipart-form`,
       {
         method: "POST",
         body: form,
@@ -53,8 +56,6 @@ export async function checkForProhibitedContent(arrayOfFiles) {
       .filter((obj) => ["Hentai", "Porn"].includes(obj.className));
 
     const pornDetected = relevant.some((obj) => obj.probability > 0.6);
-
-    console.log("pornDetected:", pornDetected);
 
     return pornDetected;
   } catch (error) {
