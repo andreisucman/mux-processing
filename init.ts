@@ -8,23 +8,23 @@ import OpenAI from "openai";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const client = new MongoClient(process.env.DATABASE_URI);
+const client = new MongoClient(process.env.DATABASE_URI!);
 const db = client.db(process.env.DATABASE_NAME);
 
 const s3Client = new S3Client({
-  region: process.env.DO_SPACES_REGION,
+  region: process.env.DO_SPACES_REGION!,
   credentials: {
-    accessKeyId: process.env.DO_SPACES_ACCESS_KEY,
-    secretAccessKey: process.env.DO_SPACES_SECRET_KEY,
+    accessKeyId: process.env.DO_SPACES_ACCESS_KEY!,
+    secretAccessKey: process.env.DO_SPACES_SECRET_KEY!,
   },
   endpoint: process.env.DO_SPACES_ENDPOINT,
 });
 
 const s3ClientAws = new S3Client({
-  region: process.env.AWS_REGION,
+  region: process.env.AWS_REGION!,
   credentials: {
-    accessKeyId: process.env.AWS_REKOGNITION_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_REKOGNITION_SECRET_KEY,
+    accessKeyId: process.env.AWS_REKOGNITION_ACCESS_KEY!,
+    secretAccessKey: process.env.AWS_REKOGNITION_SECRET_KEY!,
   },
 });
 

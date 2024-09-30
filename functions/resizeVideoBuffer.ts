@@ -5,7 +5,7 @@ import { calculateTargetDimensions } from "../helpers/utils.js";
 import { fileTypeFromBuffer } from "file-type";
 import doWithRetries from "../helpers/doWithRetries.js";
 
-export default async function resizeVideoBuffer(inputBuffer) {
+export default async function resizeVideoBuffer(inputBuffer: Buffer) {
   let tempFile;
   let outputFile;
 
@@ -17,10 +17,12 @@ export default async function resizeVideoBuffer(inputBuffer) {
     const outputFilePath = outputFile.name;
 
     await doWithRetries({
+      functionName: "resizeVideoBuffer - write",
       functionToExecute: () => fs.promises.writeFile(tempFilePath, inputBuffer),
     });
 
     const fileType = await doWithRetries({
+      functionName: "resizeVideoBuffer - get file type",
       functionToExecute: () => fileTypeFromBuffer(inputBuffer),
     });
 
@@ -29,6 +31,7 @@ export default async function resizeVideoBuffer(inputBuffer) {
     }
 
     const metadata = await doWithRetries({
+      functionName: "resizeVideoBuffer - ffmpeg",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg.ffprobe(tempFilePath, (err, metadata) => {
@@ -39,8 +42,8 @@ export default async function resizeVideoBuffer(inputBuffer) {
     });
 
     // Find the video stream
-    const videoStream = metadata.streams.find(
-      (stream) => stream.codec_type === "video"
+    const videoStream = (metadata as any).streams.find(
+      (stream: any) => stream.codec_type === "video"
     );
 
     if (!videoStream) {
@@ -54,18 +57,16 @@ export default async function resizeVideoBuffer(inputBuffer) {
       throw new Error("Unable to determine video dimensions");
     }
 
-    const maxDimensions = { width: 320, height: 568 };
     const { targetWidth, targetHeight } = calculateTargetDimensions(
       originalWidth,
-      originalHeight,
-      maxDimensions.width,
-      maxDimensions.height
+      originalHeight
     );
 
     const adjustedWidth = targetWidth - (targetWidth % 2);
     const adjustedHeight = targetHeight - (targetHeight % 2);
 
     await doWithRetries({
+      functionName: "resizeVideoBuffer - ffmpeg",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg(tempFilePath)
@@ -83,6 +84,7 @@ export default async function resizeVideoBuffer(inputBuffer) {
     });
 
     const resizedBuffer = await doWithRetries({
+      functionName: "resizeVideoBuffer - read file",
       functionToExecute: () => fs.promises.readFile(outputFilePath),
     });
 

@@ -10,25 +10,27 @@ import doWithRetries from "../helpers/doWithRetries.js";
 
 const tempDir = os.tmpdir();
 
-export default async function checkVideoSafety(buffer) {
+export default async function checkVideoSafety(buffer: Buffer) {
   const inputFilePath = path.join(tempDir, `input-${nanoid()}`);
   const framesDir = path.join(tempDir, `frames-${nanoid()}`);
 
   try {
     await doWithRetries({
+      functionName: "checkVideoSafery - write file",
       functionToExecute: () => fs.writeFile(inputFilePath, buffer),
     });
 
     await fs.mkdir(framesDir, { recursive: true });
 
     await doWithRetries({
+      functionName: "checkVideoSafery - extract frames",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg(inputFilePath)
             .outputOptions("-vf", "fps=1")
             .output(path.join(framesDir, "frame-%03d.jpg"))
             .on("end", () => {
-              resolve();
+              resolve("success");
             })
             .on("error", (err) => {
               console.error("FFmpeg error:", err);

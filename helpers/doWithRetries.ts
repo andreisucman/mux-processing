@@ -1,29 +1,38 @@
 import { delayExecution, getExponentialBackoffDelay } from "./utils.js";
 import { client } from "../init.js";
 
-async function doWithRetries({
+type DoWithRetriesProps<T> = {
+  functionToExecute: () => Promise<T>;
+  functionName: string;
+  attempt?: number;
+  maxAttempts?: number;
+};
+
+async function doWithRetries<T>({
   functionToExecute,
-  operationName,
+  functionName,
   attempt = 0,
   maxAttempts = 3,
-}) {
+}: DoWithRetriesProps<T>): Promise<T> {
   try {
     await client.connect();
-    const result = await functionToExecute();
-    return result;
+    return functionToExecute();
   } catch (error) {
     if (attempt < maxAttempts) {
       const delayTime = getExponentialBackoffDelay(attempt);
+
       await delayExecution(delayTime);
 
       return await doWithRetries({
         functionToExecute,
-        operationName,
+        functionName,
         attempt: attempt + 1,
         maxAttempts,
       });
     } else {
-      console.log("Error:", error);
+      console.log(
+        `Function call failed after maximum attempts. No more retries.`
+      );
       throw error;
     }
   }

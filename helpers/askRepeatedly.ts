@@ -1,20 +1,36 @@
+import { ObjectId } from "mongodb";
 import askGpt from "./askGpt.js";
-import doWithRetries from "./doWithRetries.js";
+import doWithRetries from "../helpers/doWithRetries.js";
+import { MessageType, RoleEnum, RunType } from "../types.js";
 
-async function askRepeatedly({ runs, systemContent, isResultString }) {
+type Props = {
+  runs: RunType[];
+  seed?: number;
+  systemContent: string;
+  isResultString?: boolean;
+};
+
+async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
   try {
     let result;
-    let conversation = [{ role: "system", content: systemContent }];
+    let conversation: MessageType[] = [
+      { role: "system" as RoleEnum, content: systemContent },
+    ];
 
     for (let i = 0; i < runs.length; i++) {
-      conversation.push({ role: "user", content: runs[i].content });
+      conversation.push({
+        role: "user",
+        content: runs[i].content,
+      } as MessageType);
 
       const response = await doWithRetries({
         functionName: "askRepeatedly - askGpt",
         functionToExecute: async () =>
           askGpt({
+            model: runs[i].model,
             messages: conversation,
             isMini: runs[i].isMini,
+            responseFormat: runs[i].responseFormat,
             isJson: isResultString ? false : i === runs.length - 1,
           }),
       });
@@ -22,7 +38,7 @@ async function askRepeatedly({ runs, systemContent, isResultString }) {
       result = response.result;
 
       conversation.push({
-        role: "assistant",
+        role: "assistant" as RoleEnum,
         content: [
           {
             type: "text",

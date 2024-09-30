@@ -6,11 +6,11 @@ import path from "path";
 
 dotenv.config();
 
-const getMimeType = (filePath) => {
+const getMimeType = (filePath: string) => {
   return mime.lookup(filePath) || "application/octet-stream";
 };
 
-export async function checkForProhibitedContent(arrayOfFiles) {
+export async function checkForProhibitedContent(arrayOfFiles: string[]) {
   try {
     const form = new FormData();
 
@@ -53,9 +53,9 @@ export async function checkForProhibitedContent(arrayOfFiles) {
 
     const relevant = data.predictions
       .flat()
-      .filter((obj) => ["Hentai", "Porn"].includes(obj.className));
+      .filter((obj: any) => ["Hentai", "Porn"].includes(obj.className));
 
-    const pornDetected = relevant.some((obj) => obj.probability > 0.6);
+    const pornDetected = relevant.some((obj: any) => obj.probability > 0.6);
 
     return pornDetected;
   } catch (error) {

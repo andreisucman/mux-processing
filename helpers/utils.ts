@@ -1,11 +1,9 @@
-import fs from "fs";
-
-export function delayExecution(ms) {
+export function delayExecution(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function getExponentialBackoffDelay(
-  attempt,
+  attempt: number,
   baseDelay = 1000,
   maxDelay = 12000
 ) {
@@ -14,12 +12,12 @@ export function getExponentialBackoffDelay(
   return Math.min(rawDelay + jitter, maxDelay);
 }
 
-export function minutesFromNow(minutes) {
+export function minutesFromNow(minutes: number) {
   return new Date(new Date().getTime() + minutes * 60000);
 }
 
-export function mimeToExtension(mimeType) {
-  const map = {
+export function mimeToExtension(mimeType: string) {
+  const map: { [key: string]: string } = {
     "image/webp": "webp",
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -36,13 +34,16 @@ export function mimeToExtension(mimeType) {
   return map[mimeType] || mimeType?.split("/")[1];
 }
 
-export function timeout(ms) {
+export function timeout(ms: number) {
   return new Promise((_, reject) =>
     setTimeout(() => reject(new Error("Timeout")), ms)
   );
 }
 
-export function calculateTargetDimensions(originalWidth, originalHeight) {
+export function calculateTargetDimensions(
+  originalWidth: number,
+  originalHeight: number
+) {
   let targetWidth, targetHeight;
 
   if (originalWidth > originalHeight) {

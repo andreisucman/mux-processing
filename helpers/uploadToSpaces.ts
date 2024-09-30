@@ -4,7 +4,17 @@ import fs from "fs";
 import { s3Client } from "../init.js";
 import { nanoid } from "nanoid";
 import { mimeToExtension } from "./utils.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, ObjectCannedACL } from "@aws-sdk/client-s3";
+
+type Props = {
+  url?: string;
+  buffer: Buffer;
+  mimeType: string;
+  localUrl?: string;
+  spaceFolder?: string;
+  fileName?: string;
+  spaceName?: string;
+};
 
 async function uploadToSpaces({
   url,
@@ -13,14 +23,14 @@ async function uploadToSpaces({
   localUrl,
   spaceFolder,
   fileName = `MYO-${nanoid()}`,
-  spaceName = process.env.DO_SPACES_BUCKET_NAME,
-}) {
+  spaceName = process.env.DO_SPACES_BUCKET_NAME!,
+}: Props) {
   try {
     if (url) {
       const response = await fetch(url);
       if (!response.ok)
         throw new Error(`Failed to fetch: ${response.statusText}`);
-      buffer = await response.arrayBuffer();
+      buffer = new Buffer(await response.arrayBuffer());
       mimeType = response.headers.get("content-type") || mimeType;
     }
 
@@ -28,7 +38,7 @@ async function uploadToSpaces({
 
     const fileExtension = mimeType
       ? mimeToExtension(mimeType)
-      : localUrl.split(".").pop();
+      : localUrl?.split(".").pop();
 
     const filePath = `${
       spaceFolder ? `${spaceFolder}/` : ""
@@ -39,12 +49,12 @@ async function uploadToSpaces({
       Key: filePath,
       Body: buffer,
       ContentType: mimeType,
-      ACL: "public-read",
+      ACL: "public-read" as ObjectCannedACL,
     };
 
     await s3Client.send(new PutObjectCommand(uploadParams));
 
-    const domain = process.env.DO_SPACES_ENDPOINT.split("https://")[1];
+    const domain = process.env.DO_SPACES_ENDPOINT!.split("https://")[1];
     return `https://${spaceName}.${domain}/${filePath}`;
   } catch (error) {
     throw new Error(`Error processing upload: ${error.message}`);

@@ -7,7 +7,7 @@ import { promisify } from "util";
 const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 
-async function checkVideoDuration(buffer) {
+async function checkVideoDuration(buffer: Buffer) {
   const tempFilePath = path.join(os.tmpdir(), `temp_video_${Date.now()}`);
 
   try {
@@ -20,7 +20,7 @@ async function checkVideoDuration(buffer) {
           return reject(err);
         }
 
-        const duration = metadata.format.duration;
+        const duration = Number(metadata.format.duration);
 
         if (duration >= 5 && duration <= 30) {
           resolve(true);

@@ -5,17 +5,14 @@ import path from "path";
 import uploadToSpaces from "../helpers/uploadToSpaces.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 
-const extractFrames = async (videoBuffer) => {
+const extractFrames = async (videoBuffer: Buffer) => {
   let cleanupTempVideo;
   let cleanupTempDir;
 
   try {
     // Create a temporary file for the video
-    const {
-      name: tempVideoPath,
-      fd,
-      removeCallback: cleanupVideo,
-    } = await doWithRetries({
+    const tmpFileResponse = await doWithRetries({
+      functionName: "resizeVideoBuffer - create a temporary file",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           tmp.file({ postfix: ".mp4" }, (err, name, fd, removeCallback) => {
@@ -25,14 +22,22 @@ const extractFrames = async (videoBuffer) => {
         }),
     });
 
+    const {
+      name: tempVideoPath,
+      fd,
+      removeCallback: cleanupVideo,
+    } = tmpFileResponse as any;
+
     cleanupTempVideo = cleanupVideo;
 
     await doWithRetries({
+      functionName: "resizeVideoBuffer - write file",
       functionToExecute: () => fs.writeFile(tempVideoPath, videoBuffer),
     });
 
     // Use ffprobe to get video duration
     const metadata = await doWithRetries({
+      functionName: "resizeVideoBuffer - get video duration",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg.ffprobe(tempVideoPath, (err, metadata) => {
@@ -42,30 +47,34 @@ const extractFrames = async (videoBuffer) => {
         }),
     });
 
-    const duration = metadata.format.duration; // in seconds
+    const duration = (metadata as any).format.duration; // in seconds
 
     // Calculate the times to extract frames over the whole duration
-    const frameTimes = [];
+    const frameTimes: number[] = [];
     for (let i = 0; i < 5; i++) {
-      const time = (duration * i) / 5;
+      const time: number = (duration * i) / 5;
       frameTimes.push(time);
     }
 
     // Create a temporary directory for frames
-    const { name: tempDir, removeCallback: cleanupDir } = await doWithRetries({
-      functionToExecute: () =>
-        new Promise((resolve, reject) => {
-          tmp.dir({ prefix: "frames-" }, (err, name, removeCallback) => {
-            if (err) reject(err);
-            else resolve({ name, removeCallback });
-          });
-        }),
-    });
+    const { name: tempDir, removeCallback: cleanupDir }: any =
+      await doWithRetries({
+        functionName:
+          "resizeVideoBuffer - create a temporary directory for frames",
+        functionToExecute: () =>
+          new Promise((resolve, reject) => {
+            tmp.dir({ prefix: "frames-" }, (err, name, removeCallback) => {
+              if (err) reject(err);
+              else resolve({ name, removeCallback });
+            });
+          }),
+      });
 
     cleanupTempDir = cleanupDir;
 
     // Use ffmpeg to extract frames at specified times
     await doWithRetries({
+      functionName: "resizeVideoBuffer -  extract frames at specified times",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg(tempVideoPath)
@@ -81,6 +90,7 @@ const extractFrames = async (videoBuffer) => {
 
     // Read all frames from tempDir
     const files = await doWithRetries({
+      functionName: "resizeVideoBuffer -  read all frames from tempDir",
       functionToExecute: () => fs.readdir(tempDir),
     });
 
@@ -89,6 +99,7 @@ const extractFrames = async (videoBuffer) => {
 
     // Read each frame file into buffer
     const frames = await doWithRetries({
+      functionName: "resizeVideoBuffer - read each frame file into buffer",
       functionToExecute: () =>
         Promise.all(
           files.map(async (file) => {
@@ -101,13 +112,14 @@ const extractFrames = async (videoBuffer) => {
     // Upload frames and get URLs
     const uploadPromises = frames.map((frameBuffer) =>
       doWithRetries({
-        operationName: "extractFrames - uploadPromises",
+        functionName: "extractFrames - uploadPromises",
         functionToExecute: () =>
           uploadToSpaces({ buffer: frameBuffer, mimeType: "image/webp" }),
       })
     );
 
     const urls = await doWithRetries({
+      functionName: "resizeVideoBuffer - getUrls",
       functionToExecute: () => Promise.all(uploadPromises),
     });
 

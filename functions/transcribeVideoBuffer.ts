@@ -4,7 +4,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { openai } from "../init.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 
-export default async function transcribeVideoBuffer(videoBuffer) {
+export default async function transcribeVideoBuffer(videoBuffer: Buffer) {
   let tempVideoFile;
   let tempAudioFile;
 
@@ -16,11 +16,13 @@ export default async function transcribeVideoBuffer(videoBuffer) {
     const audioFilePath = tempAudioFile.name;
 
     await doWithRetries({
+      functionName: "transcribeVideoBuffer - write video",
       functionToExecute: () =>
         fs.promises.writeFile(videoFilePath, videoBuffer),
     });
 
     await doWithRetries({
+      functionName: "transcribeVideoBuffer - write ffmpeg",
       functionToExecute: () =>
         new Promise((resolve, reject) => {
           ffmpeg(videoFilePath)
@@ -34,6 +36,7 @@ export default async function transcribeVideoBuffer(videoBuffer) {
     });
 
     const response = await doWithRetries({
+      functionName: "transcribeVideoBuffer - transcribe",
       functionToExecute: () =>
         openai.audio.transcriptions.create({
           file: fs.createReadStream(audioFilePath),
