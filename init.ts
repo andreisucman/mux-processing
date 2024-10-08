@@ -20,16 +20,8 @@ const s3Client = new S3Client({
   endpoint: process.env.DO_SPACES_ENDPOINT,
 });
 
-const s3ClientAws = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_REKOGNITION_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_REKOGNITION_SECRET_KEY!,
-  },
-});
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export { client, db, s3Client, s3ClientAws, openai, __dirname };
+export { client, db, s3Client, openai, __dirname };
