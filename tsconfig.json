@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": ["./**/*"],
   "exclude": ["node_modules", "./node_modules", "**/*.test.js", "dist"]

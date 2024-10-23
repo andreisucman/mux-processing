@@ -14,10 +14,12 @@ docker rm [ID]
 
 docker ps
 
-docker run -d --restart=always -p 80:3001 sunchainltd/myo-processing --env-file ./env.list
+docker run -d --restart=always -p 80:3001 sunchainltd/myo-processing:1.0 --env-file ./env.list.txt
 
 # to make the bash script executable
 
 chmod +x ./script.sh
 
 ./script.sh
+
+cp node_modules/\@tensorflow/tfjs-node/deps/lib/tensorflow.dll node_modules/\@tensorflow/tfjs-node/lib/napi-v8/ // move files in napi-v8

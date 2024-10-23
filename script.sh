@@ -2,7 +2,7 @@
 
 # Set variables
 IMAGE_NAME="sunchainltd/myo-processing"
-TAG="latest"
+TAG="1.0"
 CONTAINER_NAME="myo_processing_container" # Set a default container name
 
 # Find the container ID(s) using the image name

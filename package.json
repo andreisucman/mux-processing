@@ -15,18 +15,20 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.651.1",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "@vladmandic/human": "^3.3.3",
     "connect-timeout": "^1.9.0",
     "dotenv": "^16.3.1",
-    "express": "^4.21.0",
+    "express": "^4.21.1",
     "file-type": "^19.5.0",
     "fluent-ffmpeg": "^2.1.2",
     "formdata-node": "^6.0.3",
-    "install": "^0.13.0",
     "mime-types": "^2.1.35",
     "mongodb": "^6.5.0",
     "nanoid": "^5.0.6",
     "openai": "^4.61.0",
     "raw-body": "^2.5.2",
+    "sharp": "^0.33.5",
     "tmp": "^0.2.3"
   },
   "devDependencies": {

@@ -1,3 +1,6 @@
+import { Point } from "@vladmandic/human";
+import { TranslatedPoint } from "../types.js";
+
 export function delayExecution(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -68,4 +71,98 @@ export function calculateTargetDimensions(
     targetWidth: Math.round(targetWidth),
     targetHeight: Math.round(targetHeight),
   };
+}
+
+function calculateCentroid(points: { x: number; y: number }[]) {
+  const sum = points.reduce(
+    (acc, point) => {
+      acc.x += point.x;
+      acc.y += point.y;
+      return acc;
+    },
+    { x: 0, y: 0 }
+  );
+
+  return {
+    x: sum.x / points.length,
+    y: sum.y / points.length,
+  };
+}
+
+function normalizePoints(points: TranslatedPoint[]) {
+  const centroid = calculateCentroid(points);
+  return points.map((point) => ({
+    x: point.x - centroid.x,
+    y: point.y - centroid.y,
+  }));
+}
+
+function scaleToAverageRadius(points: TranslatedPoint[]) {
+  const distances = points.map((point) =>
+    Math.sqrt(point.x ** 2 + point.y ** 2)
+  );
+  const averageDistance =
+    distances.reduce((acc, distance) => acc + distance, 0) / distances.length;
+
+  return points.map((point) => {
+    const scale = averageDistance / Math.sqrt(point.x ** 2 + point.y ** 2);
+    return {
+      x: point.x * scale,
+      y: point.y * scale,
+    };
+  });
+}
+
+function smoothPoints(points: TranslatedPoint[], iterations = 1) {
+  for (let i = 0; i < iterations; i++) {
+    points = points.map((point, index, arr) => {
+      const prev = arr[index === 0 ? arr.length - 1 : index - 1];
+      const next = arr[(index + 1) % arr.length];
+      return {
+        x: (prev.x + point.x + next.x) / 3,
+        y: (prev.y + point.y + next.y) / 3,
+      };
+    });
+  }
+  return points;
+}
+
+export function roundLandmarks(landmarks: Point[]) {
+  const points = landmarks.map((point) => ({ x: point[0], y: point[1] }));
+  const normalizedPoints = normalizePoints(points);
+  const scaledPoints = scaleToAverageRadius(normalizedPoints);
+  const smoothedPoints = smoothPoints(scaledPoints, 2);
+  const centroid = calculateCentroid(points);
+  const finalPoints = smoothedPoints.map((point: { x: number; y: number }) => ({
+    x: point.x + centroid.x,
+    y: point.y + centroid.y,
+  }));
+
+  return finalPoints;
+}
+
+export function areLandmarksReliable(landmarks: number[][]): boolean {
+  if (!landmarks || landmarks.length === 0) return false;
+  return landmarks.every((point) => point.every((coord) => !isNaN(coord)));
+}
+
+export function computeEyeCenter(landmarks: number[][]) {
+  return landmarks.reduce(
+    (acc: { x: number; y: number }, point: number[]) => {
+      acc.x += point[0] / landmarks.length;
+      acc.y += point[1] / landmarks.length;
+      return acc;
+    },
+    { x: 0, y: 0 }
+  );
+}
+
+export function computeEyeRadius(landmarks: number[][]) {
+  return euclideanDistance(landmarks[0], landmarks[2]) * 2;
+}
+
+function euclideanDistance(p1: number[], p2: number[]) {
+  const dx = p1[0] - p2[0];
+  const dy = p1[1] - p2[1];
+  return Math.sqrt(dx * dx + dy * dy);
 }

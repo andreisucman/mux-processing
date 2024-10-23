@@ -29,3 +29,22 @@ export enum RoleEnum {
   ASSISTANT = "assistant",
   SYSTEM = "system",
 }
+
+export type CoordinateType = { x: number; y: number };
+
+export type EyeDataType = {
+  leftEyeCenter: CoordinateType | null;
+  leftEyeRadius: number | null;
+  rightEyeCenter: CoordinateType | null;
+  rightEyeRadius: number | null;
+};
+
+export type FaceDataType = {
+  faceCenter: CoordinateType | null;
+  faceRadius: number | null;
+};
+
+export type TranslatedPoint = {
+  x: number;
+  y: number;
+};
