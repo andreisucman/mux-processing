@@ -46,7 +46,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     human.tf.dispose(tensor);
 
     if (!result.face.length) {
-      res.status(404).json({ error: "No faces found in the image." });
+      res.status(200).json({ message: url });
       return;
     }
 

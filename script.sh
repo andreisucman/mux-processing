@@ -36,4 +36,4 @@ docker pull $IMAGE_NAME:$TAG
 
 # Run a new container with the default name
 echo "Running a new container $CONTAINER_NAME with the new image..."
-docker run -d --restart=always -p 80:3002 --name $CONTAINER_NAME --env-file ./env.list $IMAGE_NAME:$TAG
+docker run -d --restart=always -p 3002:3002 --name $CONTAINER_NAME --env-file ./env.list $IMAGE_NAME:$TAG

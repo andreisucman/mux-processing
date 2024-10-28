@@ -17,6 +17,8 @@ const route = express.Router();
 route.post("/", async (req: CustomRequest, res: Response) => {
   const { url } = req.body;
 
+  console.log("url", url);
+
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -51,7 +53,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     human.tf.dispose(tensor);
 
     if (!result.face.length) {
-      res.status(404).json({ error: "No faces found in the image." });
+      res.status(200).json({ message: url });
       return;
     }
 
@@ -98,12 +100,14 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     }
 
     if (!eyeData.leftEyeCenter && !eyeData.rightEyeCenter) {
-      res.status(404).json({ error: "No visible eyes found in the image." });
+      res.status(200).json({ message: url });
       return;
     }
 
     const resultUrl = await blurEyes(orientedBuffer, eyeData);
     deleteFromSpaces(url);
+
+    console.log("resultUrl eyes", resultUrl);
 
     res.status(200).json({ message: resultUrl });
   } catch (error) {

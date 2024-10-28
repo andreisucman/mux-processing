@@ -1,6 +1,5 @@
 import sharp from "sharp";
 import uploadToSpaces from "../helpers/uploadToSpaces.js";
-import deleteFromSpaces from "./deleteFromSpaces.js";
 import { EyeDataType } from "../types.js";
 
 export default async function blurEyes(
@@ -23,7 +22,7 @@ export default async function blurEyes(
     if (eyeData.leftEyeCenter && eyeData.leftEyeRadius) {
       leftEyeClipPath = `
         <clipPath id="leftEyeMask">
-          <circle cx="${eyeData.leftEyeCenter.x}" cy="${eyeData.leftEyeCenter.y}" r="${eyeData.leftEyeRadius}" />
+          <ellipse  cx="${eyeData.leftEyeCenter.x}" cy="${eyeData.leftEyeCenter.y}" rx="${eyeData.leftEyeRadius * 1.25}" ry="${eyeData.leftEyeRadius}" />
         </clipPath>
       `;
       leftEyeImage = `
@@ -41,7 +40,7 @@ export default async function blurEyes(
     if (eyeData.rightEyeCenter && eyeData.rightEyeRadius) {
       rightEyeClipPath = `
         <clipPath id="rightEyeMask">
-          <circle cx="${eyeData.rightEyeCenter.x}" cy="${eyeData.rightEyeCenter.y}" r="${eyeData.rightEyeRadius}" />
+          <ellipse  cx="${eyeData.rightEyeCenter.x}" cy="${eyeData.rightEyeCenter.y}" rx="${eyeData.rightEyeRadius * 1.25}" ry="${eyeData.rightEyeRadius}" />
         </clipPath>
       `;
       rightEyeImage = `
