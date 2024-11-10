@@ -27,6 +27,7 @@
     "formdata-node": "^6.0.3",
     "mime-types": "^2.1.35",
     "mongodb": "^6.5.0",
+    "multer": "^1.4.5-lts.1",
     "nanoid": "^5.0.6",
     "openai": "^4.61.0",
     "raw-body": "^2.5.2",
@@ -39,6 +40,7 @@
     "@types/express": "^5.0.0",
     "@types/fluent-ffmpeg": "^2.1.26",
     "@types/mime-types": "^2.1.4",
+    "@types/multer": "^1.4.12",
     "@types/node": "^22.7.4",
     "@types/tmp": "^0.2.6",
     "typescript": "^5.6.2"

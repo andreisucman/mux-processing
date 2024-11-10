@@ -7,6 +7,7 @@ import setHeaders from "./middleware/setHeaders.js";
 import analyzeVideo from "./routes/analyzeVideo.js";
 import blurEyes from "./routes/blurEyes.js";
 import blurFace from "./routes/blurFace.js";
+import transcribe from "./routes/transcribe.js"
 import { client } from "./init.js";
 
 client.connect();
@@ -38,6 +39,8 @@ const limiter = rateLimit({
 app.use(limiter)
 
 app.set("trust proxy", 1);
+
+app.use("/transcribe", transcribe);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
