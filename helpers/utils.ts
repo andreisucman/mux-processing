@@ -176,40 +176,30 @@ function euclideanDistance(p1: number[], p2: number[]) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export async function getHashes(urls: string[]) {
+export async function createHashKey(url: string) {
   try {
-    const promises = urls.map((url) =>
-      doWithRetries({
-        functionName: "getHashes - promises",
-        functionToExecute: async () => {
-          if (url.startsWith("http")) {
-            const res = await fetch(url);
+    const arrayBuffer = await doWithRetries({
+      functionName: "createHashKey - promises",
+      functionToExecute: async () => {
+        if (url.startsWith("http")) {
+          const res = await fetch(url);
 
-            if (!res.ok) {
-              throw new Error(
-                `Failed to fetch ${url}: ${res.status} ${res.statusText}`
-              );
-            }
-            return await res.arrayBuffer();
-          } else {
-            return await fs.promises.readFile(url);
+          if (!res.ok) {
+            throw new Error(
+              `Failed to fetch ${url}: ${res.status} ${res.statusText}`
+            );
           }
-        },
-      })
-    );
+          return await res.arrayBuffer();
+        } else {
+          return await fs.promises.readFile(url);
+        }
+      },
+    });
 
-    const arrBuffers = await Promise.all(promises);
-
-    const hashedKeys = arrBuffers
-      .filter(Boolean)
-      .map((arrBuffer: ArrayBuffer) => {
-        const base64String = Buffer.from(arrBuffer).toString("base64");
-        return crypto.createHash("sha256").update(base64String).digest("hex");
-      });
-
-    return hashedKeys;
+    const base64String = Buffer.from(arrayBuffer).toString("base64");
+    return crypto.createHash("sha256").update(base64String).digest("hex");
   } catch (err) {
-    console.log("Error in getHashes: ", err);
+    console.log("Error in createHashKey: ", err);
     throw err;
   }
 }

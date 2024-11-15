@@ -13,15 +13,17 @@ import { processFrame } from "../functions/processFrame.js";
 import uploadToSpaces from "../helpers/uploadToSpaces.js";
 import { CustomRequest } from "../types.js";
 import { __dirname, db } from "../init.js";
-import { getHashes } from "../helpers/utils.js";
+import { createHashKey } from "../helpers/utils.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 import addErrorLog from "../helpers/addErrorLog.js";
 import extractFrames from "../functions/extractFrames.js";
 import deleteFromSpaces from "../functions/deleteFromSpaces.js";
 import addAnalysisStatusError from "../helpers/addAnalysisStatusError.js";
-import getExistingResults from "../functions/checkIfResultExists.js";
+import getExistingResult from "../functions/getExistingResult.js";
 
 const route = express.Router();
+
+//!!! CHECK CODEC
 
 route.post("/", async (req: CustomRequest, res: Response) => {
   const { url, blurType } = req.body;
@@ -58,25 +60,20 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       timestamps: ["50%"],
     });
 
-    console.log("screenshotsFolder", screenshotsFolder);
-
     const localUrls = fs.readdirSync(screenshotsFolder);
 
-    const hashes = await getHashes(
-      localUrls.map((pathname) => path.join(screenshotsFolder, pathname))
+    const hash = await createHashKey(
+      path.join(screenshotsFolder, localUrls[0])
     );
 
-    console.log("hashes", hashes);
+    const existingResultUrl = await getExistingResult({ blurType, hash });
 
-    const existingResults = await getExistingResults({ blurType, hashes });
-
-    if (existingResults.length > 0) {
-      res.status(200).json({ message: existingResults });
+    if (existingResultUrl) {
+      res.status(200).json({ message: existingResultUrl });
       return;
     }
 
-    /* create a new result */
-    const insertResponse = await doWithRetries({
+    await doWithRetries({
       functionName: "blurVideo - add analysis status",
       functionToExecute: async () =>
         db.collection("BlurProcessingStatus").insertOne({
@@ -86,8 +83,6 @@ route.post("/", async (req: CustomRequest, res: Response) => {
           updatedAt: new Date(),
         }),
     });
-
-    console.log("insertResponse", insertResponse);
 
     res.status(200).end();
 
@@ -129,8 +124,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          "libopenh264",
-          // "libx264", // or libopenh264
+          // "libopenh264",
+          "libx264", // or libopenh264
           "-preset",
           "fast",
           "-threads",
@@ -162,8 +157,6 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       mimeType: "video/mp4",
     });
 
-    console.log("resultUrl", resultUrl);
-
     await doWithRetries({
       functionName: "blurVideo - save analysis result",
       functionToExecute: async () =>
@@ -172,9 +165,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
           {
             $set: {
               blurType,
-              hash: hashes[0],
-              originalUrl: url,
-              resultUrl,
+              hash,
+              url: resultUrl,
               isRunning: false,
               updatedAt: new Date(),
             },
