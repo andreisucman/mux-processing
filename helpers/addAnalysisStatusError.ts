@@ -3,13 +3,13 @@ import doWithRetries from "./doWithRetries.js";
 import { db } from "../init.js";
 
 type Props = {
-  contentId: ObjectId;
+  analysisId: ObjectId;
   blurType: string;
   message: string;
 };
 
 export default async function addAnalysisStatusError({
-  contentId,
+  analysisId,
   blurType,
   message,
 }: Props) {
@@ -17,19 +17,17 @@ export default async function addAnalysisStatusError({
     await doWithRetries({
       functionName: `addAnalysisStatusError`,
       functionToExecute: async () =>
-        db
-          .collection("BlurProcessingStatus")
-          .updateOne(
-            { contentId: new ObjectId(contentId), blurType },
-            {
-              $set: {
-                isRunning: false,
-                isError: true,
-                updatedAt: new Date(),
-                message,
-              },
-            }
-          ),
+        db.collection("BlurProcessingStatus").updateOne(
+          { _id: new ObjectId(analysisId), blurType },
+          {
+            $set: {
+              isRunning: false,
+              isError: true,
+              updatedAt: new Date(),
+              message,
+            },
+          }
+        ),
     });
   } catch (err) {
     console.log("Error in addAnalysisStatusError: ", err);

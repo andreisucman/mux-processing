@@ -14,7 +14,7 @@ import processEye from "../functions/processEye.js";
 import processFace from "../functions/processFace.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 import getExistingResults from "../functions/checkIfResultExists.js";
-import { getBase64Keys } from "../helpers/utils.js";
+import { getHashes } from "../helpers/utils.js";
 
 const route = express.Router();
 
@@ -33,13 +33,11 @@ route.post("/", async (req: CustomRequest, res: Response) => {
   try {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "blur-image-"));
 
-    const base64Keys = await getBase64Keys(
-      urlObjects.map((obj: UrlObject) => obj.url)
-    );
+    const hashes = await getHashes(urlObjects.map((obj: UrlObject) => obj.url));
 
     const existingResults = await getExistingResults({
       blurType,
-      base64Keys,
+      hashes,
     });
 
     if (existingResults.length > 0) {
@@ -88,7 +86,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       updatedAt: new Date(),
       isRunning: false,
       blurType,
-      base64Key: base64Keys[i],
+      hash: hashes[i],
     }));
 
     await doWithRetries({

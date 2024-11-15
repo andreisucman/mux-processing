@@ -13,7 +13,7 @@ import { processFrame } from "../functions/processFrame.js";
 import uploadToSpaces from "../helpers/uploadToSpaces.js";
 import { CustomRequest } from "../types.js";
 import { __dirname, db } from "../init.js";
-import { getBase64Keys } from "../helpers/utils.js";
+import { getHashes } from "../helpers/utils.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 import addErrorLog from "../helpers/addErrorLog.js";
 import extractFrames from "../functions/extractFrames.js";
@@ -24,14 +24,15 @@ import getExistingResults from "../functions/checkIfResultExists.js";
 const route = express.Router();
 
 route.post("/", async (req: CustomRequest, res: Response) => {
-  const { url, blurType, contentId } = req.body;
+  const { url, blurType } = req.body;
 
-  if (!["face", "eyes"].includes(blurType) || !contentId || !url) {
+  if (!["face", "eyes"].includes(blurType) || !url) {
     res.status(400).json({ error: "Bad request" });
     return;
   }
 
   let tempDir;
+  const analysisId = new ObjectId();
 
   try {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "blur-video-"));
@@ -57,11 +58,17 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       timestamps: ["50%"],
     });
 
+    console.log("screenshotsFolder", screenshotsFolder);
+
     const localUrls = fs.readdirSync(screenshotsFolder);
 
-    const base64Keys = await getBase64Keys(localUrls);
+    const hashes = await getHashes(
+      localUrls.map((pathname) => path.join(screenshotsFolder, pathname))
+    );
 
-    const existingResults = await getExistingResults({ blurType, base64Keys });
+    console.log("hashes", hashes);
+
+    const existingResults = await getExistingResults({ blurType, hashes });
 
     if (existingResults.length > 0) {
       res.status(200).json({ message: existingResults });
@@ -69,21 +76,18 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     }
 
     /* create a new result */
-    const analysisId = new ObjectId();
-
-    await doWithRetries({
+    const insertResponse = await doWithRetries({
       functionName: "blurVideo - add analysis status",
       functionToExecute: async () =>
-        db.collection("BlurProcessingStatus").updateOne(
-          { _id: analysisId, blurType },
-          {
-            $set: {
-              isRunning: true,
-              updatedAt: new Date(),
-            },
-          }
-        ),
+        db.collection("BlurProcessingStatus").insertOne({
+          _id: analysisId,
+          blurType,
+          isRunning: true,
+          updatedAt: new Date(),
+        }),
     });
+
+    console.log("insertResponse", insertResponse);
 
     res.status(200).end();
 
@@ -125,7 +129,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          "libx264", // or libopenh264
+          "libopenh264",
+          // "libx264", // or libopenh264
           "-preset",
           "fast",
           "-threads",
@@ -157,6 +162,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       mimeType: "video/mp4",
     });
 
+    console.log("resultUrl", resultUrl);
+
     await doWithRetries({
       functionName: "blurVideo - save analysis result",
       functionToExecute: async () =>
@@ -165,7 +172,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
           {
             $set: {
               blurType,
-              base64Key: base64Keys[0],
+              hash: hashes[0],
               originalUrl: url,
               resultUrl,
               isRunning: false,
@@ -180,7 +187,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
   } catch (error) {
     deleteFromSpaces(url);
     addErrorLog({ functionName: "processing - blurVideo", message: error });
-    addAnalysisStatusError({ blurType, contentId, message: error });
+    addAnalysisStatusError({ blurType, analysisId, message: error });
 
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });

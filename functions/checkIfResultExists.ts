@@ -1,15 +1,14 @@
 import { db } from "../init.js";
-import { getBase64Keys } from "../helpers/utils.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 
 type checkIfResultExistProps = {
-  base64Keys: string[];
+  hashes: string[];
   blurType: string;
 };
 
 export default async function getExistingResults({
   blurType,
-  base64Keys,
+  hashes,
 }: checkIfResultExistProps) {
   try {
     const resultRecords = await doWithRetries({
@@ -18,7 +17,7 @@ export default async function getExistingResults({
         db
           .collection("BlurProcessingStatus")
           .find(
-            { base64Key: { $in: base64Keys }, blurType },
+            { hash: { $in: hashes }, blurType },
             { projection: { originalUrl: 1, resultUrl: 1, contentKey: 1 } }
           )
           .toArray(),

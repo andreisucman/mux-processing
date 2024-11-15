@@ -1,4 +1,5 @@
 import fs from "fs";
+import crypto from "crypto";
 import { Point } from "@vladmandic/human";
 import { TranslatedPoint } from "../types.js";
 import doWithRetries from "./doWithRetries.js";
@@ -175,11 +176,11 @@ function euclideanDistance(p1: number[], p2: number[]) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export async function getBase64Keys(urls: string[]) {
+export async function getHashes(urls: string[]) {
   try {
     const promises = urls.map((url) =>
       doWithRetries({
-        functionName: "getBase64Key - promises",
+        functionName: "getHashes - promises",
         functionToExecute: async () => {
           if (url.startsWith("http")) {
             const res = await fetch(url);
@@ -199,13 +200,16 @@ export async function getBase64Keys(urls: string[]) {
 
     const arrBuffers = await Promise.all(promises);
 
-    const base64Strings = arrBuffers
+    const hashedKeys = arrBuffers
       .filter(Boolean)
-      .map((arrBuffer) => Buffer.from(arrBuffer).toString("base64"));
+      .map((arrBuffer: ArrayBuffer) => {
+        const base64String = Buffer.from(arrBuffer).toString("base64");
+        return crypto.createHash("sha256").update(base64String).digest("hex");
+      });
 
-    return base64Strings.map((string) => string.slice(0, 32));
+    return hashedKeys;
   } catch (err) {
-    console.log("Error in getBase64Keys: ", err);
+    console.log("Error in getHashes: ", err);
     throw err;
   }
 }
