@@ -1,137 +1,59 @@
 import ffmpeg from "fluent-ffmpeg";
-import { promises as fs } from "fs";
-import tmp from "tmp";
+import { nanoid } from "nanoid";
+import os from "os";
+import fs from "fs";
 import path from "path";
-import uploadToSpaces from "../helpers/uploadToSpaces.js";
-import doWithRetries from "../helpers/doWithRetries.js";
+import { Readable } from "stream";
 
-const extractFrames = async (videoBuffer: Buffer) => {
-  let cleanupTempVideo;
-  let cleanupTempDir;
+function bufferToStream(buffer: Buffer) {
+  const readable = new Readable();
+  readable._read = () => {};
+  readable.push(buffer);
+  readable.push(null);
+  return readable;
+}
 
-  try {
-    // Create a temporary file for the video
-    const tmpFileResponse = await doWithRetries({
-      functionName: "resizeVideoBuffer - create a temporary file",
-      functionToExecute: () =>
-        new Promise((resolve, reject) => {
-          tmp.file({ postfix: ".mp4" }, (err, name, fd, removeCallback) => {
-            if (err) reject(err);
-            else resolve({ name, fd, removeCallback });
-          });
-        }),
-    });
-
-    const {
-      name: tempVideoPath,
-      fd,
-      removeCallback: cleanupVideo,
-    } = tmpFileResponse as any;
-
-    cleanupTempVideo = cleanupVideo;
-
-    await doWithRetries({
-      functionName: "resizeVideoBuffer - write file",
-      functionToExecute: () => fs.writeFile(tempVideoPath, videoBuffer),
-    });
-
-    // Use ffprobe to get video duration
-    const metadata = await doWithRetries({
-      functionName: "resizeVideoBuffer - get video duration",
-      functionToExecute: () =>
-        new Promise((resolve, reject) => {
-          ffmpeg.ffprobe(tempVideoPath, (err, metadata) => {
-            if (err) reject(err);
-            else resolve(metadata);
-          });
-        }),
-    });
-
-    const duration = (metadata as any).format.duration; // in seconds
-
-    // Calculate the times to extract frames over the whole duration
-    const frameTimes: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      const time: number = (duration * i) / 5;
-      frameTimes.push(time);
-    }
-
-    // Create a temporary directory for frames
-    const { name: tempDir, removeCallback: cleanupDir }: any =
-      await doWithRetries({
-        functionName:
-          "resizeVideoBuffer - create a temporary directory for frames",
-        functionToExecute: () =>
-          new Promise((resolve, reject) => {
-            tmp.dir({ prefix: "frames-" }, (err, name, removeCallback) => {
-              if (err) reject(err);
-              else resolve({ name, removeCallback });
-            });
-          }),
-      });
-
-    cleanupTempDir = cleanupDir;
-
-    // Use ffmpeg to extract frames at specified times
-    await doWithRetries({
-      functionName: "resizeVideoBuffer -  extract frames at specified times",
-      functionToExecute: () =>
-        new Promise((resolve, reject) => {
-          ffmpeg(tempVideoPath)
-            .on("end", resolve)
-            .on("error", reject)
-            .screenshots({
-              timestamps: frameTimes,
-              filename: "frame-%02i.png",
-              folder: tempDir,
-            });
-        }),
-    });
-
-    // Read all frames from tempDir
-    const files = await doWithRetries({
-      functionName: "resizeVideoBuffer -  read all frames from tempDir",
-      functionToExecute: () => fs.readdir(tempDir),
-    });
-
-    // Sort files to ensure correct order
-    files.sort();
-
-    // Read each frame file into buffer
-    const frames = await doWithRetries({
-      functionName: "resizeVideoBuffer - read each frame file into buffer",
-      functionToExecute: () =>
-        Promise.all(
-          files.map(async (file) => {
-            const data = await fs.readFile(path.join(tempDir, file));
-            return data;
-          })
-        ),
-    });
-
-    // Upload frames and get URLs
-    const uploadPromises = frames.map((frameBuffer) =>
-      doWithRetries({
-        functionName: "extractFrames - uploadPromises",
-        functionToExecute: () =>
-          uploadToSpaces({ buffer: frameBuffer, mimeType: "image/webp" }),
-      })
-    );
-
-    const urls = await doWithRetries({
-      functionName: "resizeVideoBuffer - getUrls",
-      functionToExecute: () => Promise.all(uploadPromises),
-    });
-
-    return urls;
-  } catch (err) {
-    console.error("Error extracting frames:", err);
-    throw err;
-  } finally {
-    // Clean up temp files and directories
-    if (cleanupTempVideo) cleanupTempVideo();
-    if (cleanupTempDir) cleanupTempDir();
-  }
+type ExtractFramesProps = {
+  input: string | Buffer;
+  timestamps: string[] | number[];
 };
 
-export default extractFrames;
+export default async function extractFrames({
+  input,
+  timestamps,
+}: ExtractFramesProps) {
+  const tempDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), `screenshots-${nanoid()}`)
+  );
+
+  try {
+    let finalInput;
+
+    if (Buffer.isBuffer(input)) {
+      finalInput = bufferToStream(input);
+    } else {
+      finalInput = input;
+    }
+
+    await new Promise((res, rej) => {
+      ffmpeg(finalInput)
+        .screenshots({
+          timestamps,
+          filename: "screenshot-%i.png",
+          folder: tempDir,
+          size: "720x1280",
+        })
+        .on("end", () => res("Screenshots created successfully"))
+        .on("error", (err) => rej(err));
+    });
+
+    return tempDir;
+  } catch (err) {
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+
+    console.log("Error in extractFrames: ", err);
+    throw err;
+  }
+}

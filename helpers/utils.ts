@@ -1,8 +1,16 @@
+import fs from "fs";
 import { Point } from "@vladmandic/human";
 import { TranslatedPoint } from "../types.js";
+import doWithRetries from "./doWithRetries.js";
 
 export function delayExecution(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function upperFirst(string: string) {
+  if (!string) return "";
+
+  return string[0].toUpperCase() + string.slice(1);
 }
 
 export function getExponentialBackoffDelay(
@@ -50,20 +58,20 @@ export function calculateTargetDimensions(
   let targetWidth, targetHeight;
 
   if (originalWidth > originalHeight) {
-    if (originalWidth < 1920) {
+    if (originalWidth < 1280) {
       targetWidth = originalWidth;
       targetHeight = originalHeight;
     } else {
-      targetWidth = 1920;
-      targetHeight = (1920 / originalWidth) * originalHeight;
+      targetWidth = 1280;
+      targetHeight = (1280 / originalWidth) * originalHeight;
     }
   } else {
-    if (originalHeight < 1920) {
+    if (originalHeight < 1280) {
       targetHeight = originalHeight;
       targetWidth = originalWidth;
     } else {
-      targetHeight = 1920;
-      targetWidth = (1920 / originalHeight) * originalWidth;
+      targetHeight = 1280;
+      targetWidth = (1280 / originalHeight) * originalWidth;
     }
   }
 
@@ -165,4 +173,39 @@ function euclideanDistance(p1: number[], p2: number[]) {
   const dx = p1[0] - p2[0];
   const dy = p1[1] - p2[1];
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+export async function getBase64Keys(urls: string[]) {
+  try {
+    const promises = urls.map((url) =>
+      doWithRetries({
+        functionName: "getBase64Key - promises",
+        functionToExecute: async () => {
+          if (url.startsWith("http")) {
+            const res = await fetch(url);
+
+            if (!res.ok) {
+              throw new Error(
+                `Failed to fetch ${url}: ${res.status} ${res.statusText}`
+              );
+            }
+            return await res.arrayBuffer();
+          } else {
+            return await fs.promises.readFile(url);
+          }
+        },
+      })
+    );
+
+    const arrBuffers = await Promise.all(promises);
+
+    const base64Strings = arrBuffers
+      .filter(Boolean)
+      .map((arrBuffer) => Buffer.from(arrBuffer).toString("base64"));
+
+    return base64Strings.map((string) => string.slice(0, 32));
+  } catch (err) {
+    console.log("Error in getBase64Keys: ", err);
+    throw err;
+  }
 }

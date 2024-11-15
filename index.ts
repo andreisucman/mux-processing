@@ -5,9 +5,9 @@ import timeout from "connect-timeout";
 import rateLimit from "express-rate-limit";
 import setHeaders from "./middleware/setHeaders.js";
 import analyzeVideo from "./routes/analyzeVideo.js";
-import blurEyes from "./routes/blurEyes.js";
-import blurFace from "./routes/blurFace.js";
-import transcribe from "./routes/transcribe.js"
+import blurVideo from "./routes/blurVideo.js";
+import blurImage from "./routes/blurImage.js";
+import transcribe from "./routes/transcribe.js";
 import { client } from "./init.js";
 
 client.connect();
@@ -36,19 +36,20 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(limiter)
+app.use(limiter);
 
 app.set("trust proxy", 1);
+
+app.use("*", setHeaders);
 
 app.use("/transcribe", transcribe);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use("*", setHeaders);
 app.use(timeout("10m"));
 
-app.use("/blurEyes", blurEyes);
-app.use("/blurFace", blurFace);
+app.use("/blurVideo", blurVideo);
+app.use("/blurImage", blurImage);
 app.use("/analyzeVideo", analyzeVideo);
 
 app.get("/", (req, res) => {

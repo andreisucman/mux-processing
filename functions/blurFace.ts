@@ -3,66 +3,105 @@ import uploadToSpaces from "../helpers/uploadToSpaces.js";
 
 export default async function blurFace(
   imageBuffer: Buffer,
-  silhouetteLandmarks: Array<{ x: number; y: number }>
+  silhouetteLandmarks: Array<{ x: number; y: number }>,
+  format: "webp" | "png"
 ) {
   try {
-    const base64 = imageBuffer.toString("base64");
-
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
-    const width = metadata.width;
-    const height = metadata.height;
+    const width = metadata.width || 0;
+    const height = metadata.height || 0;
 
-    let faceClipPath = "";
-    let faceImage = "";
+    if (
+      silhouetteLandmarks &&
+      silhouetteLandmarks.length > 0 &&
+      width > 0 &&
+      height > 0
+    ) {
+      const xs = silhouetteLandmarks.map((point) => point.x);
+      const ys = silhouetteLandmarks.map((point) => point.y);
 
-    if (silhouetteLandmarks && silhouetteLandmarks.length > 0) {
-      // Generate the points string for the polygon
-      const points = silhouetteLandmarks
+      const left = Math.max(0, Math.floor(Math.min(...xs)));
+      const right = Math.min(width, Math.ceil(Math.max(...xs)));
+      const top = Math.max(0, Math.floor(Math.min(...ys)));
+      const bottom = Math.min(height, Math.ceil(Math.max(...ys)));
+
+      const faceWidth = right - left;
+      const faceHeight = bottom - top;
+
+      const adjustedLandmarks = silhouetteLandmarks.map((point) => ({
+        x: point.x - left,
+        y: point.y - top,
+      }));
+
+      const faceRegion = await sharp(imageBuffer)
+        .extract({ left, top, width: faceWidth, height: faceHeight })
+        .toBuffer();
+
+      const blurredFace = await sharp(faceRegion).blur(50).toBuffer();
+
+      const points = adjustedLandmarks
         .map((point) => `${point.x},${point.y}`)
         .join(" ");
 
-      faceClipPath = `
-        <clipPath id="faceMask">
-          <polygon points="${points}" />
-        </clipPath>
+      const mask = `
+        <svg width="${faceWidth}" height="${faceHeight}" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="${points}" fill="white" />
+        </svg>
       `;
-      faceImage = `
-        <!-- Blurred face -->
-        <image
-          clip-path="url(#faceMask)"
-          filter="url(#blur)"
-          width="${width}"
-          height="${height}"
-          href="data:image/jpeg;base64,${base64}"
-        />
-      `;
+
+      const maskedFaceRegion = await sharp(blurredFace)
+        .composite([
+          {
+            input: Buffer.from(mask),
+            blend: "dest-in",
+          },
+        ])
+        .png()
+        .toBuffer();
+
+      const overlay = await sharp({
+        create: {
+          width,
+          height,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      })
+        .composite([
+          {
+            input: maskedFaceRegion,
+            left,
+            top,
+          },
+        ])
+        .png()
+        .toBuffer();
+
+      const resultBuffer = await image
+        .composite([
+          {
+            input: overlay,
+            blend: "over",
+          },
+        ])
+        .toFormat(format)
+        .toBuffer();
+
+      const resultUrl = await uploadToSpaces({
+        buffer: resultBuffer,
+        mimeType: format === "png" ? "image/png" : "image/webp",
+      });
+
+      return { resultUrl, resultBuffer };
+    } else {
+      const resultUrl = await uploadToSpaces({
+        buffer: imageBuffer,
+        mimeType: format === "png" ? "image/png" : "image/webp",
+      });
+
+      return { resultUrl, resultBuffer: imageBuffer };
     }
-
-    const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        ${faceClipPath}
-
-        <filter id="blur">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="30" />
-        </filter>
-
-        <!-- Original Image -->
-        <image width="${width}" height="${height}" href="data:image/jpeg;base64,${base64}" />
-        ${faceImage}
-      </svg>
-    `;
-
-    const svgBuffer = Buffer.from(svg);
-
-    const resultBuffer = await sharp(svgBuffer).toFormat("jpeg").toBuffer();
-
-    const resultUrl = await uploadToSpaces({
-      buffer: resultBuffer,
-      mimeType: "image/jpeg",
-    });
-
-    return resultUrl;
   } catch (error) {
     console.error("Error in blurFace:", error);
     throw error;

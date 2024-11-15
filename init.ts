@@ -10,7 +10,7 @@ import OpenAI from "openai";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const client = new MongoClient(process.env.DATABASE_URI!);
-const db = client.db(process.env.DATABASE_NAME);
+const db = client.db(process.env.USER_DATABASE_NAME);
 
 const s3Client = new S3Client({
   region: process.env.DO_SPACES_REGION!,

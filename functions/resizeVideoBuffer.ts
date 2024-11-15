@@ -88,7 +88,7 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
       functionToExecute: () => fs.promises.readFile(outputFilePath),
     });
 
-    return resizedBuffer;
+    return { resizedBuffer, targetHeight, targetWidth };
   } catch (error) {
     console.error("Error resizing video:", error);
     throw error;

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Set variables
-IMAGE_NAME="sunchainltd/myo-processing"
-TAG="1.0"
+# IMAGE_NAME="sunchainltd/myo-processing"
+IMAGE_NAME="sunchainltd/test"
+TAG="latest"
 CONTAINER_NAME="myo_processing_container" # Set a default container name
 
 # Find the container ID(s) using the image name

@@ -8,8 +8,8 @@ import { PutObjectCommand, ObjectCannedACL } from "@aws-sdk/client-s3";
 
 type Props = {
   url?: string;
-  buffer: Buffer;
-  mimeType: string;
+  buffer?: Buffer;
+  mimeType?: string;
   localUrl?: string;
   spaceFolder?: string;
   fileName?: string;
