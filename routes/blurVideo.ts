@@ -69,7 +69,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const existingResultUrl = await getExistingResult({ blurType, hash });
 
     if (existingResultUrl) {
-      res.status(200).json({ message: existingResultUrl });
+      res.status(200).json({ message: { url: existingResultUrl } });
       return;
     }
 
@@ -84,7 +84,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         }),
     });
 
-    res.status(200).end();
+    res.status(200).json({ message: { hash } });
 
     fs.mkdirSync(framesDir);
     fs.mkdirSync(processedFramesDir);
@@ -102,9 +102,17 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     const limit = pLimit(10);
 
+    const incrementPercent = 100 / frameFiles.length;
+
     const promises = frameFiles.map((frameFile) =>
       limit(() =>
-        processFrame(frameFile, framesDir, processedFramesDir, blurType)
+        processFrame({
+          frameFile,
+          framesDir,
+          processedFramesDir,
+          blurType,
+          cb: () => progressUpdateCallback(analysisId, incrementPercent),
+        })
       )
     );
 
@@ -188,3 +196,18 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 });
 
 export default route;
+
+async function progressUpdateCallback(analysisId: ObjectId, inc: number) {
+  await doWithRetries({
+    functionName: "blurVideo - progressUpdateCallback",
+    functionToExecute: async () =>
+      db.collection("BlurProcessingStatus").updateOne(
+        { _id: analysisId },
+        {
+          $inc: {
+            progress: inc,
+          },
+        }
+      ),
+  });
+}

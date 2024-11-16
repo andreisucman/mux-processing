@@ -5,10 +5,7 @@ import { human } from "../init.js";
 import processEye from "./processEye.js";
 import processFace from "./processFace.js";
 
-export async function detectWithHuman(
-  orientedBuffer: Buffer,
-  outputFramePath: string
-) {
+export async function detectWithHuman(orientedBuffer: Buffer) {
   try {
     const tensor = human.tf.tidy(() => {
       const decode = human.tf.node.decodeImage(orientedBuffer, 3);
@@ -33,8 +30,7 @@ export async function detectWithHuman(
     human.tf.dispose(tensor);
 
     if (!result.face.length) {
-      fs.writeFileSync(outputFramePath, orientedBuffer);
-      return;
+      return null;
     }
 
     const detection = result.face[0];
@@ -46,12 +42,21 @@ export async function detectWithHuman(
   }
 }
 
-export async function processFrame(
-  frameFile: string,
-  framesDir: string,
-  processedFramesDir: string,
-  blurType: "face" | "eyes"
-) {
+type ProcessFrameProps = {
+  frameFile: string;
+  framesDir: string;
+  processedFramesDir: string;
+  blurType: "face" | "eyes";
+  cb?: () => void;
+};
+
+export async function processFrame({
+  frameFile,
+  framesDir,
+  processedFramesDir,
+  blurType,
+  cb,
+}: ProcessFrameProps) {
   try {
     const framePath = path.join(framesDir, frameFile);
     const outputFramePath = path.join(processedFramesDir, frameFile);
@@ -66,21 +71,26 @@ export async function processFrame(
 
     const orientedBuffer = await sharp(frameBuffer).rotate().toBuffer();
 
-    const detection = await detectWithHuman(orientedBuffer, outputFramePath);
+    const detection = await detectWithHuman(orientedBuffer);
 
-    let resultBuffer;
+    if (detection) {
+      let resultBuffer;
 
-    if (blurType === "face") {
-      resultBuffer = await processFace(detection, orientedBuffer);
+      if (blurType === "face") {
+        resultBuffer = await processFace(detection, orientedBuffer);
+      } else {
+        resultBuffer = await processEye(
+          detection,
+          outputFramePath,
+          orientedBuffer
+        );
+      }
+      fs.writeFileSync(outputFramePath, resultBuffer);
     } else {
-      resultBuffer = await processEye(
-        detection,
-        outputFramePath,
-        orientedBuffer
-      );
+      fs.writeFileSync(outputFramePath, orientedBuffer);
     }
 
-    fs.writeFileSync(outputFramePath, resultBuffer);
+    if (cb) cb();
     console.log("Processed frame:", outputFramePath);
   } catch (err) {
     console.error(`Error processing frame ${frameFile}:`, err);

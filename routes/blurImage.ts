@@ -57,17 +57,22 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const buffer = Buffer.from(await response.arrayBuffer());
 
     const orientedBuffer = await sharp(buffer).rotate().toBuffer();
-    const detection = await detectWithHuman(orientedBuffer, tempPath);
+    const detection = await detectWithHuman(orientedBuffer);
 
+    let resultUrl;
     let resultBuffer;
 
-    if (blurType === "face") {
-      resultBuffer = await processFace(detection, orientedBuffer);
+    if (detection) {
+      if (blurType === "face") {
+        resultBuffer = await processFace(detection, orientedBuffer);
+      } else {
+        resultBuffer = await processEye(detection, tempPath, orientedBuffer);
+      }
     } else {
-      resultBuffer = await processEye(detection, tempPath, orientedBuffer);
+      resultBuffer = orientedBuffer;
     }
 
-    const resultUrl = await uploadToSpaces({
+    resultUrl = await uploadToSpaces({
       buffer: resultBuffer,
       mimeType: "image/webp",
     });
