@@ -22,7 +22,7 @@ async function checkVideoDuration(buffer: Buffer) {
 
         const duration = Number(metadata.format.duration);
 
-        if (duration >= 5 && duration <= 30) {
+        if (duration >= 5 && duration <= 15) {
           resolve(true);
         } else {
           resolve(false);

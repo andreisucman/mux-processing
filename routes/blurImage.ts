@@ -39,7 +39,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     });
 
     if (existingResultUrl) {
-      res.status(200).json({ message: existingResultUrl });
+      res.status(200).json({ message: { url: existingResultUrl } });
       return;
     }
 
@@ -91,7 +91,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         db.collection("BlurProcessingStatus").insertOne(toInsert),
     });
 
-    res.status(200).json({ message: resultUrl });
+    res.status(200).json({ message: { url: resultUrl } });
   } catch (error) {
     console.error("Error processing image:", error);
 

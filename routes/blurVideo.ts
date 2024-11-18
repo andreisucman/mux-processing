@@ -17,9 +17,9 @@ import { createHashKey } from "../helpers/utils.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 import addErrorLog from "../helpers/addErrorLog.js";
 import extractFrames from "../functions/extractFrames.js";
-import deleteFromSpaces from "../functions/deleteFromSpaces.js";
 import addAnalysisStatusError from "../helpers/addAnalysisStatusError.js";
 import getExistingResult from "../functions/getExistingResult.js";
+import resizeVideoBuffer from "../functions/resizeVideoBuffer.js";
 
 const route = express.Router();
 
@@ -27,6 +27,7 @@ const route = express.Router();
 
 route.post("/", async (req: CustomRequest, res: Response) => {
   const { url, blurType } = req.body;
+  console.log("req.body blur video", req.body);
 
   if (!["face", "eyes"].includes(blurType) || !url) {
     res.status(400).json({ error: "Bad request" });
@@ -45,19 +46,26 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const processedFramesDir = path.join(tempDir, `processedFrames-${id}`);
     const outputVideoPath = path.join(tempDir, `output-${id}.mp4`);
 
-    const response = await fetch(url);
+    const response = await doWithRetries({
+      functionName: "blurVideo - fetch",
+      functionToExecute: async () => fetch(url),
+    });
+
     if (!response.ok) {
       throw new Error(`Failed to fetch the URL: ${response.statusText}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(videoPath, buffer);
+
+    const { resizedBuffer } = await resizeVideoBuffer(buffer);
+
+    fs.writeFileSync(videoPath, resizedBuffer);
 
     /* check if the result already exists */
     const screenshotsFolder = await extractFrames({
       input: videoPath,
-      timestamps: ["50%"],
+      timestamps: ["25%"],
     });
 
     const localUrls = fs.readdirSync(screenshotsFolder);
@@ -78,6 +86,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       functionToExecute: async () =>
         db.collection("BlurProcessingStatus").insertOne({
           _id: analysisId,
+          hash,
           blurType,
           isRunning: true,
           updatedAt: new Date(),
@@ -132,8 +141,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          // "libopenh264",
-          "libx264", // or libopenh264
+          "libopenh264",
+          // "libx264", // or libopenh264
           "-preset",
           "fast",
           "-threads",
@@ -185,7 +194,6 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     await fs.promises.rm(tempDir, { recursive: true, force: true });
     await fs.promises.rm(screenshotsFolder, { recursive: true, force: true });
   } catch (error) {
-    deleteFromSpaces(url);
     addErrorLog({ functionName: "processing - blurVideo", message: error });
     addAnalysisStatusError({ blurType, analysisId, message: error });
 

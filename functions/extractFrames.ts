@@ -3,15 +3,6 @@ import { nanoid } from "nanoid";
 import os from "os";
 import fs from "fs";
 import path from "path";
-import { Readable } from "stream";
-
-function bufferToStream(buffer: Buffer) {
-  const readable = new Readable();
-  readable._read = () => {};
-  readable.push(buffer);
-  readable.push(null);
-  return readable;
-}
 
 type ExtractFramesProps = {
   input: string | Buffer;
@@ -21,39 +12,50 @@ type ExtractFramesProps = {
 export default async function extractFrames({
   input,
   timestamps,
-}: ExtractFramesProps) {
+}: ExtractFramesProps): Promise<string> {
   const tempDir = fs.mkdtempSync(
     path.join(os.tmpdir(), `screenshots-${nanoid()}`)
   );
 
-  try {
-    let finalInput;
+  let tempFilePath: string | undefined;
 
+  try {
     if (Buffer.isBuffer(input)) {
-      finalInput = bufferToStream(input);
-    } else {
-      finalInput = input;
+      tempFilePath = path.join(tempDir, `temp-video-${nanoid()}.mp4`);
+      fs.writeFileSync(tempFilePath, input);
+      input = tempFilePath; // Reassign `input` as a string file path
     }
 
-    await new Promise((res, rej) => {
-      ffmpeg(finalInput)
+    if (typeof input !== "string") {
+      throw new Error(
+        "Invalid input type. Input must be a file path or Buffer."
+      );
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(input as any)
         .screenshots({
           timestamps,
           filename: "screenshot-%i.png",
           folder: tempDir,
           size: "720x1280",
         })
-        .on("end", () => res("Screenshots created successfully"))
-        .on("error", (err) => rej(err));
+        .on("end", () => resolve())
+        .on("error", (err) => reject(err));
     });
 
     return tempDir;
-  } catch (err) {
+  } catch (error) {
+    console.error("Error in extractFrames:", error);
+
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
 
-    console.log("Error in extractFrames: ", err);
-    throw err;
+    throw error;
+  } finally {
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
   }
 }

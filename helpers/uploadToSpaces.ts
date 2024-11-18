@@ -55,6 +55,8 @@ async function uploadToSpaces({
     await s3Client.send(new PutObjectCommand(uploadParams));
 
     const domain = process.env.DO_SPACES_ENDPOINT!.split("https://")[1];
+    console.log("spaces", `https://${spaceName}.${domain}/${filePath}`);
+
     return `https://${spaceName}.${domain}/${filePath}`;
   } catch (error) {
     throw new Error(`Error processing upload: ${error.message}`);

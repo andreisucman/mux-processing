@@ -2,7 +2,8 @@ import { CustomRequest } from "../types.js";
 import * as dotenv from "dotenv";
 dotenv.config();
 import fs from "fs";
-import express, { Response } from "express";
+import path from "path";
+import { Router, Response } from "express";
 import checkVideoSafety from "../functions/checkVideoSafety.js";
 import resizeVideoBuffer from "../functions/resizeVideoBuffer.js";
 import transcribeVideoBuffer from "../functions/transcribeVideoBuffer.js";
@@ -12,7 +13,7 @@ import extractFrames from "../functions/extractFrames.js";
 import doWithRetries from "../helpers/doWithRetries.js";
 import uploadToSpaces from "../helpers/uploadToSpaces.js";
 
-const route = express.Router();
+const route = Router();
 
 route.post("/", async (req: CustomRequest, res: Response) => {
   if (req.header("authorization") !== process.env.SECRET) {
@@ -20,38 +21,53 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     return;
   }
 
+  let urlsFolder: any;
+
   try {
     const { url } = req.body;
 
-    const response = await fetch(url);
+    console.log("url", url);
+
+    const response = await doWithRetries({
+      functionName: "analyzeVideo - fetch",
+      functionToExecute: async () => fetch(url),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch the URL: ${response.statusText}`);
     }
+
+    console.log("response", response);
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const { resizedBuffer } = await resizeVideoBuffer(buffer);
 
+    console.log("resizedBuffer", resizedBuffer);
+
     const durationIsValid = await checkVideoDuration(resizedBuffer);
+
+    console.log("durationIsValid", durationIsValid);
 
     if (!durationIsValid) {
       res.status(400).json({
         status: false,
-        message: "Video must be between 5 and 30 seconds in length.",
+        error: "Video must be between 5 and 15 seconds in length.",
       });
       return;
     }
 
-    const { status: videoIsSafe } = await checkVideoSafety(resizedBuffer);
+    console.log("durationIsValid", durationIsValid);
 
-    if (!videoIsSafe) {
-      res
-        .status(400)
-        .json({ status: false, message: "Video contains prohibited content" });
-      return;
-    }
+    // const { status: videoIsSafe } = await checkVideoSafety(resizedBuffer);
+
+    // if (!videoIsSafe) {
+    //   res
+    //     .status(400)
+    //     .json({ status: false, message: "Video contains prohibited content" });
+    //   return;
+    // }
 
     const transcription = await transcribeVideoBuffer(resizedBuffer);
     const { verdict: textIsSafe } = await checkTextSafety(transcription);
@@ -63,27 +79,36 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    const urlsFolder = await extractFrames({
+    console.log("textIsSafe", textIsSafe);
+
+    urlsFolder = await extractFrames({
       input: resizedBuffer,
-      timestamps: ["50%"],
+      timestamps: ["25%", "50%", "75%"],
     });
 
-    const localUrls = fs.readdirSync(urlsFolder);
+    console.log("urlsFolder", urlsFolder);
 
-    const uploadPromises = localUrls.map((localUrl) =>
-      doWithRetries({
+    const fileNames = fs.readdirSync(urlsFolder);
+
+    const uploadPromises = fileNames.map((fileName) => {
+      const filePath = path.join(urlsFolder, fileName);
+      console.log("filePath", filePath);
+      return doWithRetries({
         functionName: "extractFrames - uploadPromises",
-        functionToExecute: () =>
-          uploadToSpaces({ localUrl, mimeType: "image/webp" }),
-      })
-    );
+        functionToExecute: async () =>
+          uploadToSpaces({ localUrl: filePath, mimeType: "image/webp" }),
+      });
+    });
 
     const urls = await doWithRetries({
       functionName: "resizeVideoBuffer - getUrls",
       functionToExecute: () => Promise.all(uploadPromises),
     });
 
-    fs.rmSync(urlsFolder, { recursive: true, force: true });
+    console.log("lien 108", {
+      status: true,
+      message: urls,
+    });
 
     res.status(200).json({ status: true, message: urls });
   } catch (error) {

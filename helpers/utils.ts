@@ -197,7 +197,8 @@ export async function createHashKey(url: string) {
     });
 
     const base64String = Buffer.from(arrayBuffer).toString("base64");
-    return crypto.createHash("sha256").update(base64String).digest("hex");
+    const base64Uri = base64String.split(",").pop()
+    return crypto.createHash("sha256").update(base64Uri).digest("hex");
   } catch (err) {
     console.log("Error in createHashKey: ", err);
     throw err;
