@@ -55,9 +55,7 @@ export default async function processEye(
       return;
     }
 
-    const blurResponse = await blurEyes(orientedBuffer, eyeData, "png");
-
-    return blurResponse.resultBuffer;
+    return await blurEyes(orientedBuffer, eyeData, "png");
   } catch (err) {
     console.log("Error in processEye: ", err);
     throw err;

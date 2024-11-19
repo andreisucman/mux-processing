@@ -33,13 +33,13 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     const hash = await createHashKey(url);
 
-    const existingResultUrl = await getExistingResults({
+    const existingResult = await getExistingResults({
       blurType,
       hash,
     });
 
-    if (existingResultUrl) {
-      res.status(200).json({ message: { url: existingResultUrl } });
+    if (existingResult) {
+      res.status(200).json({ message: existingResult });
       return;
     }
 

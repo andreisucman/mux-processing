@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import uploadToSpaces from "../helpers/uploadToSpaces.js";
 
 export default async function blurFace(
   imageBuffer: Buffer,
@@ -88,19 +87,9 @@ export default async function blurFace(
         .toFormat(format)
         .toBuffer();
 
-      const resultUrl = await uploadToSpaces({
-        buffer: resultBuffer,
-        mimeType: format === "png" ? "image/png" : "image/webp",
-      });
-
-      return { resultUrl, resultBuffer };
+      return resultBuffer;
     } else {
-      const resultUrl = await uploadToSpaces({
-        buffer: imageBuffer,
-        mimeType: format === "png" ? "image/png" : "image/webp",
-      });
-
-      return { resultUrl, resultBuffer: imageBuffer };
+      return imageBuffer;
     }
   } catch (error) {
     console.error("Error in blurFace:", error);

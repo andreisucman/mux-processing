@@ -91,7 +91,6 @@ export async function processFrame({
     }
 
     if (cb) cb();
-    console.log("Processed frame:", outputFramePath);
   } catch (err) {
     console.error(`Error processing frame ${frameFile}:`, err);
     const framePath = path.join(framesDir, frameFile);

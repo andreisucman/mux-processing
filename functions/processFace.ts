@@ -10,13 +10,7 @@ export default async function processFace(
     const silhouetteLandmarks = detection.annotations.silhouette;
     const roundedLandmarks = roundLandmarks(silhouetteLandmarks);
 
-    const blurResponse = await blurFace(
-      orientedBuffer,
-      roundedLandmarks,
-      "png"
-    );
-
-    return blurResponse.resultBuffer;
+    return await blurFace(orientedBuffer, roundedLandmarks, "png");
   } catch (err) {
     console.log("Error in processFace: ", err);
     throw err;

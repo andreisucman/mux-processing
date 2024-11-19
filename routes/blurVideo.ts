@@ -27,7 +27,7 @@ const route = express.Router();
 
 route.post("/", async (req: CustomRequest, res: Response) => {
   const { url, blurType } = req.body;
-  console.log("req.body blur video", req.body);
+  console.log("blur video req.body", req.body);
 
   if (!["face", "eyes"].includes(blurType) || !url) {
     res.status(400).json({ error: "Bad request" });
@@ -58,7 +58,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const { resizedBuffer } = await resizeVideoBuffer(buffer);
+    const { resizedBuffer, targetHeight, targetWidth } =
+      await resizeVideoBuffer(buffer);
 
     fs.writeFileSync(videoPath, resizedBuffer);
 
@@ -66,6 +67,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const screenshotsFolder = await extractFrames({
       input: videoPath,
       timestamps: ["25%"],
+      width: targetWidth,
+      height: targetHeight,
     });
 
     const localUrls = fs.readdirSync(screenshotsFolder);
@@ -74,10 +77,11 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       path.join(screenshotsFolder, localUrls[0])
     );
 
-    const existingResultUrl = await getExistingResult({ blurType, hash });
+    const existingResult = await getExistingResult({ blurType, hash });
 
-    if (existingResultUrl) {
-      res.status(200).json({ message: { url: existingResultUrl } });
+    if (existingResult) {
+      console.log("blur video immediate response", existingResult);
+      res.status(200).json({ message: { ...existingResult, hash } }); // return hash to make it not rerun when analysis is in progress and page reloaded
       return;
     }
 
@@ -174,6 +178,18 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       mimeType: "video/mp4",
     });
 
+    console.log(
+      "blur video processed file",
+      path.join(processedFramesDir, processedFrameFiles[0])
+    );
+
+    const thumbnail = await uploadToSpaces({
+      localUrl: path.join(processedFramesDir, processedFrameFiles[0]),
+      mimeType: "image/webp",
+    });
+
+    console.log("blur video thumbnail", thumbnail);
+
     await doWithRetries({
       functionName: "blurVideo - save analysis result",
       functionToExecute: async () =>
@@ -184,6 +200,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
               blurType,
               hash,
               url: resultUrl,
+              thumbnail,
               isRunning: false,
               updatedAt: new Date(),
             },
@@ -194,8 +211,11 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     await fs.promises.rm(tempDir, { recursive: true, force: true });
     await fs.promises.rm(screenshotsFolder, { recursive: true, force: true });
   } catch (error) {
-    addErrorLog({ functionName: "processing - blurVideo", message: error });
-    addAnalysisStatusError({ blurType, analysisId, message: error });
+    addErrorLog({
+      functionName: "processing - blurVideo",
+      message: error.message,
+    });
+    addAnalysisStatusError({ blurType, analysisId, message: error.message });
 
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });

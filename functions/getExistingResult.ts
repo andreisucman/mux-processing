@@ -16,10 +16,13 @@ export default async function getExistingResult({
       functionToExecute: async () =>
         db
           .collection("BlurProcessingStatus")
-          .findOne({ hash, blurType }, { projection: { url: 1 } }),
+          .findOne(
+            { hash, blurType },
+            { projection: { url: 1, thumbnail: 1 } }
+          ),
     });
 
-    return resultRecord?.url;
+    return resultRecord;
   } catch (err) {
     console.log("Error in getExistingResults: ", err);
     throw err;

@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import uploadToSpaces from "../helpers/uploadToSpaces.js";
 import { CoordinateType, EyeDataType } from "../types.js";
 
 export default async function blurEyes(
@@ -43,12 +42,7 @@ export default async function blurEyes(
       .toFormat(format)
       .toBuffer();
 
-    const resultUrl = await uploadToSpaces({
-      buffer: resultBuffer,
-      mimeType: format === "png" ? "image/png" : "image/webp",
-    });
-
-    return { resultUrl, resultBuffer };
+    return resultBuffer;
   } catch (error) {
     console.error("Error in blurEyes:", error);
     throw error;

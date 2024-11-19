@@ -26,7 +26,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
   try {
     const { url } = req.body;
 
-    console.log("url", url);
+    console.log("analyzeVideo req.body", req.body);
 
     const response = await doWithRetries({
       functionName: "analyzeVideo - fetch",
@@ -37,18 +37,13 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       throw new Error(`Failed to fetch the URL: ${response.statusText}`);
     }
 
-    console.log("response", response);
-
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const { resizedBuffer } = await resizeVideoBuffer(buffer);
-
-    console.log("resizedBuffer", resizedBuffer);
+    const { resizedBuffer, targetHeight, targetWidth } =
+      await resizeVideoBuffer(buffer);
 
     const durationIsValid = await checkVideoDuration(resizedBuffer);
-
-    console.log("durationIsValid", durationIsValid);
 
     if (!durationIsValid) {
       res.status(400).json({
@@ -57,8 +52,6 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       });
       return;
     }
-
-    console.log("durationIsValid", durationIsValid);
 
     // const { status: videoIsSafe } = await checkVideoSafety(resizedBuffer);
 
@@ -79,14 +72,12 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    console.log("textIsSafe", textIsSafe);
-
     urlsFolder = await extractFrames({
       input: resizedBuffer,
       timestamps: ["25%", "50%", "75%"],
+      width: targetWidth,
+      height: targetHeight,
     });
-
-    console.log("urlsFolder", urlsFolder);
 
     const fileNames = fs.readdirSync(urlsFolder);
 
@@ -105,7 +96,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       functionToExecute: () => Promise.all(uploadPromises),
     });
 
-    console.log("lien 108", {
+    console.log("analyze video urls", {
       status: true,
       message: urls,
     });

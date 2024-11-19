@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 
 type ExtractFramesProps = {
+  width?: number;
+  height?: number;
   input: string | Buffer;
   timestamps: string[] | number[];
 };
@@ -12,6 +14,8 @@ type ExtractFramesProps = {
 export default async function extractFrames({
   input,
   timestamps,
+  width = 720,
+  height = 1280,
 }: ExtractFramesProps): Promise<string> {
   const tempDir = fs.mkdtempSync(
     path.join(os.tmpdir(), `screenshots-${nanoid()}`)
@@ -38,7 +42,7 @@ export default async function extractFrames({
           timestamps,
           filename: "screenshot-%i.png",
           folder: tempDir,
-          size: "720x1280",
+          size: `${width}x${height}`,
         })
         .on("end", () => resolve())
         .on("error", (err) => reject(err));
