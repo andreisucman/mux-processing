@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Set variables
-# IMAGE_NAME="sunchainltd/myo-processing"
+# IMAGE_NAME="sunchainltd/mux-processing"
 IMAGE_NAME="sunchainltd/test"
 TAG="latest"
-CONTAINER_NAME="myo_processing_container" # Set a default container name
+CONTAINER_NAME="mux_processing_container" # Set a default container name
 
 # Find the container ID(s) using the image name
 # This command lists container IDs for containers running the specified image

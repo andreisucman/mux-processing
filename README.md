@@ -6,7 +6,7 @@ sudo systemctl start docker
 
 sudo systemctl enable docker
 
-docker pull sunchainltd/myo-processing --no-cache
+docker pull sunchainltd/mux-processing --no-cache
 
 docker stop [ID]
 
@@ -14,7 +14,7 @@ docker rm [ID]
 
 docker ps
 
-docker run -d --restart=always -p 80:3001 sunchainltd/myo-processing:1.0 --env-file ./env.list.txt
+docker run -d --restart=always -p 80:3001 sunchainltd/mux-processing:1.0 --env-file ./env.list.txt
 
 # to make the bash script executable
 

@@ -22,7 +22,7 @@ async function uploadToSpaces({
   mimeType,
   localUrl,
   spaceFolder,
-  fileName = `MYO-${nanoid()}`,
+  fileName = `mux-${nanoid()}`,
   spaceName = process.env.DO_SPACES_BUCKET_NAME!,
 }: Props) {
   try {
