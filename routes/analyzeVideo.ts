@@ -1,17 +1,18 @@
-import { CustomRequest } from "../types.js";
 import * as dotenv from "dotenv";
 dotenv.config();
+
 import fs from "fs";
 import path from "path";
-import { Router, Response } from "express";
-import checkVideoSafety from "../functions/checkVideoSafety.js";
-import resizeVideoBuffer from "../functions/resizeVideoBuffer.js";
-import transcribeVideoBuffer from "../functions/transcribeVideoBuffer.js";
-import checkVideoDuration from "../functions/checkVideoDuration.js";
-import checkTextSafety from "../functions/checkTextSafety.js";
-import extractFrames from "../functions/extractFrames.js";
-import doWithRetries from "../helpers/doWithRetries.js";
-import uploadToSpaces from "../helpers/uploadToSpaces.js";
+import { CustomRequest } from "types.js";
+import { Router, Response, NextFunction } from "express";
+import resizeVideoBuffer from "functions/resizeVideoBuffer.js";
+import transcribeVideoBuffer from "functions/transcribeVideoBuffer.js";
+import checkVideoDuration from "functions/checkVideoDuration.js";
+import checkTextSafety from "functions/checkTextSafety.js";
+import extractFrames from "functions/extractFrames.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import uploadToSpaces from "functions/uploadToSpaces.js";
+import httpError from "@/helpers/httpError.js";
 
 const route = Router();
 
@@ -26,18 +27,13 @@ route.post("/", async (req: CustomRequest, res: Response) => {
   try {
     const { url } = req.body;
 
-    console.log("analyzeVideo req.body", req.body);
-
-    const response = await doWithRetries({
-      functionName: "analyzeVideo - fetch",
-      functionToExecute: async () => fetch(url),
-    });
+    const response = await doWithRetries(async () => fetch(url));
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch the URL: ${response.statusText}`);
+      throw httpError(`Failed to fetch the URL: ${response.statusText}`);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await doWithRetries(() => response.arrayBuffer());
     const buffer = Buffer.from(arrayBuffer);
 
     const { resizedBuffer, targetHeight, targetWidth } =
@@ -83,23 +79,12 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     const uploadPromises = fileNames.map((fileName) => {
       const filePath = path.join(urlsFolder, fileName);
-      console.log("filePath", filePath);
-      return doWithRetries({
-        functionName: "extractFrames - uploadPromises",
-        functionToExecute: async () =>
-          uploadToSpaces({ localUrl: filePath, mimeType: "image/webp" }),
-      });
+      return doWithRetries(async () =>
+        uploadToSpaces({ localUrl: filePath, mimeType: "image/webp" })
+      );
     });
 
-    const urls = await doWithRetries({
-      functionName: "resizeVideoBuffer - getUrls",
-      functionToExecute: () => Promise.all(uploadPromises),
-    });
-
-    console.log("analyze video urls", {
-      status: true,
-      message: urls,
-    });
+    const urls = await doWithRetries(() => Promise.all(uploadPromises));
 
     res.status(200).json({ status: true, message: urls });
   } catch (error) {

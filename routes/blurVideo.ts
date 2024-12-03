@@ -9,17 +9,17 @@ import ffmpeg from "fluent-ffmpeg";
 import { nanoid } from "nanoid";
 import { ObjectId } from "mongodb";
 import express, { Response } from "express";
-import { processFrame } from "../functions/processFrame.js";
-import uploadToSpaces from "../helpers/uploadToSpaces.js";
-import { CustomRequest } from "../types.js";
-import { __dirname, db } from "../init.js";
-import { createHashKey } from "../helpers/utils.js";
-import doWithRetries from "../helpers/doWithRetries.js";
-import addErrorLog from "../helpers/addErrorLog.js";
-import extractFrames from "../functions/extractFrames.js";
-import addAnalysisStatusError from "../helpers/addAnalysisStatusError.js";
-import getExistingResult from "../functions/getExistingResult.js";
-import resizeVideoBuffer from "../functions/resizeVideoBuffer.js";
+import { processFrame } from "functions/processFrame.js";
+import uploadToSpaces from "functions/uploadToSpaces.js";
+import { CustomRequest } from "types.js";
+import { __dirname, db } from "init.js";
+import createHashKey from "@/functions/createHashKey.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import extractFrames from "functions/extractFrames.js";
+import addAnalysisStatusError from "functions/addAnalysisStatusError.js";
+import getExistingResult from "functions/getExistingResult.js";
+import resizeVideoBuffer from "functions/resizeVideoBuffer.js";
+import httpError from "@/helpers/httpError.js";
 
 const route = express.Router();
 
@@ -46,13 +46,10 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const processedFramesDir = path.join(tempDir, `processedFrames-${id}`);
     const outputVideoPath = path.join(tempDir, `output-${id}.mp4`);
 
-    const response = await doWithRetries({
-      functionName: "blurVideo - fetch",
-      functionToExecute: async () => fetch(url),
-    });
+    const response = await doWithRetries(async () => fetch(url));
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch the URL: ${response.statusText}`);
+      throw httpError(`Failed to fetch the URL: ${response.statusText}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -85,17 +82,15 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    await doWithRetries({
-      functionName: "blurVideo - add analysis status",
-      functionToExecute: async () =>
-        db.collection("BlurProcessingStatus").insertOne({
-          _id: analysisId,
-          hash,
-          blurType,
-          isRunning: true,
-          updatedAt: new Date(),
-        }),
-    });
+    await doWithRetries(async () =>
+      db.collection("BlurProcessingStatus").insertOne({
+        _id: analysisId,
+        hash,
+        blurType,
+        isRunning: true,
+        updatedAt: new Date(),
+      })
+    );
 
     res.status(200).json({ message: { hash } });
 
@@ -124,7 +119,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
           framesDir,
           processedFramesDir,
           blurType,
-          cb: () => progressUpdateCallback(analysisId, incrementPercent),
+          cb: () => incrementProgress(analysisId, incrementPercent),
         })
       )
     );
@@ -134,7 +129,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const processedFrameFiles = fs.readdirSync(processedFramesDir);
 
     if (frameFiles.length !== processedFrameFiles.length) {
-      throw new Error(
+      throw httpError(
         `Mismatch in number of frames. Original: ${frameFiles.length}, Processed: ${processedFrameFiles.length}`
       );
     }
@@ -178,44 +173,31 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       mimeType: "video/mp4",
     });
 
-    console.log(
-      "blur video processed file",
-      path.join(processedFramesDir, processedFrameFiles[0])
-    );
-
     const thumbnail = await uploadToSpaces({
       localUrl: path.join(processedFramesDir, processedFrameFiles[0]),
       mimeType: "image/webp",
     });
 
-    console.log("blur video thumbnail", thumbnail);
-
-    await doWithRetries({
-      functionName: "blurVideo - save analysis result",
-      functionToExecute: async () =>
-        db.collection("BlurProcessingStatus").updateOne(
-          { _id: analysisId },
-          {
-            $set: {
-              blurType,
-              hash,
-              url: resultUrl,
-              thumbnail,
-              isRunning: false,
-              updatedAt: new Date(),
-            },
-          }
-        ),
-    });
+    await doWithRetries(async () =>
+      db.collection("BlurProcessingStatus").updateOne(
+        { _id: analysisId },
+        {
+          $set: {
+            blurType,
+            hash,
+            url: resultUrl,
+            thumbnail,
+            isRunning: false,
+            updatedAt: new Date(),
+          },
+        }
+      )
+    );
 
     await fs.promises.rm(tempDir, { recursive: true, force: true });
     await fs.promises.rm(screenshotsFolder, { recursive: true, force: true });
-  } catch (error) {
-    addErrorLog({
-      functionName: "processing - blurVideo",
-      message: error.message,
-    });
-    addAnalysisStatusError({ blurType, analysisId, message: error.message });
+  } catch (err) {
+    addAnalysisStatusError({ blurType, analysisId, message: err.message });
 
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
@@ -225,17 +207,15 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
 export default route;
 
-async function progressUpdateCallback(analysisId: ObjectId, inc: number) {
-  await doWithRetries({
-    functionName: "blurVideo - progressUpdateCallback",
-    functionToExecute: async () =>
-      db.collection("BlurProcessingStatus").updateOne(
-        { _id: analysisId },
-        {
-          $inc: {
-            progress: inc,
-          },
-        }
-      ),
-  });
+async function incrementProgress(analysisId: ObjectId, inc: number) {
+  await doWithRetries(async () =>
+    db.collection("BlurProcessingStatus").updateOne(
+      { _id: analysisId },
+      {
+        $inc: {
+          progress: inc,
+        },
+      }
+    )
+  );
 }

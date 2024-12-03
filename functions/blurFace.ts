@@ -1,3 +1,4 @@
+import httpError from "@/helpers/httpError.js";
 import sharp from "sharp";
 
 export default async function blurFace(
@@ -91,8 +92,7 @@ export default async function blurFace(
     } else {
       return imageBuffer;
     }
-  } catch (error) {
-    console.error("Error in blurFace:", error);
-    throw error;
+  } catch (err) {
+    throw httpError(err);
   }
 }

@@ -1,6 +1,7 @@
-import blurFace from "./blurFace.js";
-import { roundLandmarks } from "../helpers/utils.js";
+import blurFace from "functions/blurFace.js";
+import { roundLandmarks } from "helpers/utils.js";
 import { FaceResult } from "@vladmandic/human";
+import httpError from "@/helpers/httpError.js";
 
 export default async function processFace(
   detection: FaceResult,
@@ -12,7 +13,6 @@ export default async function processFace(
 
     return await blurFace(orientedBuffer, roundedLandmarks, "png");
   } catch (err) {
-    console.log("Error in processFace: ", err);
-    throw err;
+    throw httpError(err);
   }
 }

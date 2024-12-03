@@ -3,12 +3,17 @@ import http from "http";
 import cors from "cors";
 import timeout from "connect-timeout";
 import rateLimit from "express-rate-limit";
-import setHeaders from "./middleware/setHeaders.js";
-import analyzeVideo from "./routes/analyzeVideo.js";
-import blurVideo from "./routes/blurVideo.js";
-import blurImage from "./routes/blurImage.js";
-import transcribe from "./routes/transcribe.js";
-import { client } from "./init.js";
+import setHeaders from "middleware/setHeaders.js";
+import analyzeVideo from "routes/analyzeVideo.js";
+import blurVideo from "routes/blurVideo.js";
+import blurImage from "routes/blurImage.js";
+import transcribe from "routes/transcribe.js";
+import metricCapturer from "middleware/metricCapturer.js";
+import metrics from "routes/metrics.js";
+import rootRoute from "routes/rootRoute.js";
+import logCapturer from "middleware/logCapturer.js";
+import errorHandler from "middleware/errorHandler.js";
+import { client } from "init.js";
 
 client.connect();
 
@@ -37,10 +42,15 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+app.use(logCapturer);
+app.use(metricCapturer);
 
 app.set("trust proxy", 1);
 
 app.use("*", setHeaders);
+
+app.use("/", rootRoute);
+app.use("/metrics", metrics);
 
 app.use("/transcribe", transcribe);
 
@@ -52,9 +62,7 @@ app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
 app.use("/analyzeVideo", analyzeVideo);
 
-app.get("/", (req, res) => {
-  res.status(200).json({ message: "" });
-});
+app.use(errorHandler);
 
 const port = process.env.PORT || 3002;
 const httpServer = http.createServer(app);

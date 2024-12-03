@@ -1,9 +1,9 @@
 import * as dotenv from "dotenv";
-
 dotenv.config();
 
-import { openai } from "../init.js";
-import { MessageType } from "../types.js";
+import { openai } from "init.js";
+import { MessageType } from "types.js";
+import httpError from "helpers/httpError.js";
 
 type Props = {
   messages: MessageType[];
@@ -45,8 +45,8 @@ async function askGpt({
         : completion.choices[0].message.content,
       tokens: completion?.usage?.total_tokens,
     };
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw httpError(err);
   }
 }
 

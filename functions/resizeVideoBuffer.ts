@@ -1,9 +1,10 @@
 import fs from "fs";
 import tmp from "tmp";
 import ffmpeg from "fluent-ffmpeg";
-import { calculateTargetDimensions } from "../helpers/utils.js";
+import { calculateTargetDimensions } from "helpers/utils.js";
 import { fileTypeFromBuffer } from "file-type";
-import doWithRetries from "../helpers/doWithRetries.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import httpError from "@/helpers/httpError.js";
 
 export default async function resizeVideoBuffer(inputBuffer: Buffer) {
   let tempFile;
@@ -16,30 +17,23 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
     const tempFilePath = tempFile.name;
     const outputFilePath = outputFile.name;
 
-    await doWithRetries({
-      functionName: "resizeVideoBuffer - write",
-      functionToExecute: () => fs.promises.writeFile(tempFilePath, inputBuffer),
-    });
+    await doWithRetries(() => fs.promises.writeFile(tempFilePath, inputBuffer));
 
-    const fileType = await doWithRetries({
-      functionName: "resizeVideoBuffer - get file type",
-      functionToExecute: () => fileTypeFromBuffer(inputBuffer),
-    });
+    const fileType = await doWithRetries(() => fileTypeFromBuffer(inputBuffer));
 
     if (!fileType || !fileType.mime.startsWith("video/")) {
       throw new Error("Invalid file type");
     }
 
-    const metadata = await doWithRetries({
-      functionName: "resizeVideoBuffer - ffmpeg",
-      functionToExecute: () =>
+    const metadata = await doWithRetries(
+      () =>
         new Promise((resolve, reject) => {
           ffmpeg.ffprobe(tempFilePath, (err, metadata) => {
             if (err) reject(err);
             else resolve(metadata);
           });
-        }),
-    });
+        })
+    );
 
     // Find the video stream
     const videoStream = (metadata as any).streams.find(
@@ -47,14 +41,14 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
     );
 
     if (!videoStream) {
-      throw new Error("No video stream found in the media file");
+      throw httpError("No video stream found in the media file");
     }
 
     const originalWidth = videoStream.width || videoStream.coded_width;
     const originalHeight = videoStream.height || videoStream.coded_height;
 
     if (!originalWidth || !originalHeight) {
-      throw new Error("Unable to determine video dimensions");
+      throw httpError("Unable to determine video dimensions");
     }
 
     const { targetWidth, targetHeight } = calculateTargetDimensions(
@@ -65,9 +59,8 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
     const adjustedWidth = targetWidth - (targetWidth % 2);
     const adjustedHeight = targetHeight - (targetHeight % 2);
 
-    await doWithRetries({
-      functionName: "resizeVideoBuffer - ffmpeg",
-      functionToExecute: () =>
+    await doWithRetries(
+      () =>
         new Promise((resolve, reject) => {
           ffmpeg(tempFilePath)
             .outputOptions([
@@ -80,18 +73,16 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
               reject(err);
             })
             .save(outputFilePath);
-        }),
-    });
+        })
+    );
 
-    const resizedBuffer = await doWithRetries({
-      functionName: "resizeVideoBuffer - read file",
-      functionToExecute: () => fs.promises.readFile(outputFilePath),
-    });
+    const resizedBuffer = await doWithRetries(() =>
+      fs.promises.readFile(outputFilePath)
+    );
 
     return { resizedBuffer, targetHeight, targetWidth };
-  } catch (error) {
-    console.error("Error resizing video:", error);
-    throw error;
+  } catch (err) {
+    throw httpError(err);
   } finally {
     if (tempFile) tempFile.removeCallback();
     if (outputFile) outputFile.removeCallback();

@@ -5,8 +5,9 @@ import path from "path";
 import fs from "fs/promises";
 import ffmpeg from "fluent-ffmpeg";
 import { nanoid } from "nanoid";
-import { checkForProhibitedContent } from "./checkProhibitedContent.js";
-import doWithRetries from "../helpers/doWithRetries.js";
+import { checkForProhibitedContent } from "functions/checkProhibitedContent.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import httpError from "@/helpers/httpError.js";
 
 const tempDir = os.tmpdir();
 
@@ -15,16 +16,12 @@ export default async function checkVideoSafety(buffer: Buffer) {
   const framesDir = path.join(tempDir, `frames-${nanoid()}`);
 
   try {
-    await doWithRetries({
-      functionName: "checkVideoSafery - write file",
-      functionToExecute: () => fs.writeFile(inputFilePath, buffer),
-    });
+    await doWithRetries(() => fs.writeFile(inputFilePath, buffer));
 
     await fs.mkdir(framesDir, { recursive: true });
 
-    await doWithRetries({
-      functionName: "checkVideoSafery - extract frames",
-      functionToExecute: () =>
+    await doWithRetries(
+      () =>
         new Promise((resolve, reject) => {
           ffmpeg(inputFilePath)
             .outputOptions("-vf", "fps=1")
@@ -37,8 +34,8 @@ export default async function checkVideoSafety(buffer: Buffer) {
               reject(err);
             })
             .run();
-        }),
-    });
+        })
+    );
 
     const frameFiles = await fs.readdir(framesDir);
 
@@ -57,8 +54,7 @@ export default async function checkVideoSafety(buffer: Buffer) {
       };
     }
   } catch (err) {
-    console.error("Error in checking video safety:", err);
-    throw err;
+    throw httpError(err);
   } finally {
     try {
       await fs.unlink(inputFilePath).catch((e) => {

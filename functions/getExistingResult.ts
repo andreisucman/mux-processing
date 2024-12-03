@@ -1,5 +1,6 @@
-import { db } from "../init.js";
-import doWithRetries from "../helpers/doWithRetries.js";
+import { db } from "init.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import httpError from "@/helpers/httpError.js";
 
 type GetExistingResultsProps = {
   hash: string;
@@ -11,20 +12,14 @@ export default async function getExistingResult({
   hash,
 }: GetExistingResultsProps) {
   try {
-    const resultRecord = await doWithRetries({
-      functionName: "getExistingResults",
-      functionToExecute: async () =>
-        db
-          .collection("BlurProcessingStatus")
-          .findOne(
-            { hash, blurType },
-            { projection: { url: 1, thumbnail: 1 } }
-          ),
-    });
+    const resultRecord = await doWithRetries(async () =>
+      db
+        .collection("BlurProcessingStatus")
+        .findOne({ hash, blurType }, { projection: { url: 1, thumbnail: 1 } })
+    );
 
     return resultRecord;
   } catch (err) {
-    console.log("Error in getExistingResults: ", err);
-    throw err;
+    throw httpError(err);
   }
 }

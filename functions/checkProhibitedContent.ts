@@ -1,10 +1,11 @@
-import { FormData, File } from "formdata-node";
 import * as dotenv from "dotenv";
+dotenv.config();
+
+import { FormData, File } from "formdata-node";
 import mime from "mime-types";
 import fs from "fs/promises";
 import path from "path";
-
-dotenv.config();
+import httpError from "@/helpers/httpError.js";
 
 const getMimeType = (filePath: string) => {
   return mime.lookup(filePath) || "application/octet-stream";
@@ -44,7 +45,7 @@ export async function checkForProhibitedContent(arrayOfFiles: string[]) {
     );
 
     if (!response.ok) {
-      throw new Error(
+      throw httpError(
         `Server responded with ${response.status}: ${response.statusText}`
       );
     }
@@ -58,8 +59,7 @@ export async function checkForProhibitedContent(arrayOfFiles: string[]) {
     const pornDetected = relevant.some((obj: any) => obj.probability > 0.6);
 
     return pornDetected;
-  } catch (error) {
-    console.error("Error uploading files:", error.message);
-    throw error;
+  } catch (err) {
+    throw httpError(err);
   }
 }

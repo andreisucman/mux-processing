@@ -1,10 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+
 import fs from "fs";
-import { s3Client } from "../init.js";
+import { s3Client } from "init.js";
 import { nanoid } from "nanoid";
-import { mimeToExtension } from "./utils.js";
+import { mimeToExtension } from "helpers/utils.js";
 import { PutObjectCommand, ObjectCannedACL } from "@aws-sdk/client-s3";
+import httpError from "@/helpers/httpError.js";
 
 type Props = {
   url?: string;
@@ -29,7 +31,7 @@ async function uploadToSpaces({
     if (url) {
       const response = await fetch(url);
       if (!response.ok)
-        throw new Error(`Failed to fetch: ${response.statusText}`);
+        throw httpError(`Failed to fetch: ${response.statusText}`);
       buffer = new Buffer(await response.arrayBuffer());
       mimeType = response.headers.get("content-type") || mimeType;
     }
@@ -58,8 +60,8 @@ async function uploadToSpaces({
     console.log("spaces", `https://${spaceName}.${domain}/${filePath}`);
 
     return `https://${spaceName}.${domain}/${filePath}`;
-  } catch (error) {
-    throw new Error(`Error processing upload: ${error.message}`);
+  } catch (err) {
+    throw httpError(err);
   }
 }
 

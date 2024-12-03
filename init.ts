@@ -5,10 +5,12 @@ import { fileURLToPath } from "url";
 import { BackendEnum, Human } from "@vladmandic/human";
 import { MongoClient } from "mongodb";
 import { S3Client } from "@aws-sdk/client-s3";
+import * as promClient from "prom-client";
 import OpenAI from "openai";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const promClientRegister = new promClient.Registry();
 const client = new MongoClient(process.env.DATABASE_URI!);
 const db = client.db(process.env.DATABASE_NAME);
 
@@ -26,7 +28,7 @@ const openai = new OpenAI({
 });
 
 const humanConfig = {
-  backend: "tensorflow" as BackendEnum, 
+  backend: "tensorflow" as BackendEnum,
   modelBasePath: "file://models/",
   debug: true,
   async: false,
@@ -59,4 +61,4 @@ await human.tf.ready();
 
 await human.load();
 
-export { human, client, db, s3Client, openai, __dirname };
+export { human, client, db, s3Client, openai, __dirname, promClientRegister };

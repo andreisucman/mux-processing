@@ -1,6 +1,7 @@
-import askRepeatedly from "../helpers/askRepeatedly.js";
-import doWithRetries from "../helpers/doWithRetries.js";
-import { RunType } from "../types.js";
+import httpError from "@/helpers/httpError.js";
+import askRepeatedly from "@/functions/askRepeatedly.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import { RunType } from "types.js";
 
 export default async function checkTextSafety(text: string) {
   try {
@@ -31,17 +32,15 @@ export default async function checkTextSafety(text: string) {
       },
     ];
 
-    const response = await doWithRetries({
-      functionName: "checkTextSafety",
-      functionToExecute: () =>
-        askRepeatedly({
-          runs,
-          systemContent,
-        }),
-    });
+    const response = await doWithRetries(() =>
+      askRepeatedly({
+        runs,
+        systemContent,
+      })
+    );
 
     return response;
   } catch (err) {
-    throw err;
+    throw httpError(err);
   }
 }

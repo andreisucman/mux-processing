@@ -1,7 +1,7 @@
-import { ObjectId } from "mongodb";
-import askGpt from "./askGpt.js";
-import doWithRetries from "../helpers/doWithRetries.js";
-import { MessageType, RoleEnum, RunType } from "../types.js";
+import askGpt from "@/functions/askGpt.js";
+import doWithRetries from "helpers/doWithRetries.js";
+import { MessageType, RoleEnum, RunType } from "types.js";
+import httpError from "@/helpers/httpError.js";
 
 type Props = {
   runs: RunType[];
@@ -23,17 +23,15 @@ async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
         content: runs[i].content,
       } as MessageType);
 
-      const response = await doWithRetries({
-        functionName: "askRepeatedly - askGpt",
-        functionToExecute: async () =>
-          askGpt({
-            model: runs[i].model,
-            messages: conversation,
-            isMini: runs[i].isMini,
-            responseFormat: runs[i].responseFormat,
-            isJson: isResultString ? false : i === runs.length - 1,
-          }),
-      });
+      const response = await doWithRetries(async () =>
+        askGpt({
+          model: runs[i].model,
+          messages: conversation,
+          isMini: runs[i].isMini,
+          responseFormat: runs[i].responseFormat,
+          isJson: isResultString ? false : i === runs.length - 1,
+        })
+      );
 
       result = response.result;
 
@@ -49,8 +47,8 @@ async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
     }
 
     return result;
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw httpError(err);
   }
 }
 

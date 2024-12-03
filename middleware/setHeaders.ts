@@ -1,7 +1,8 @@
-import { CustomRequest } from "../types.js";
-import { Response, NextFunction } from "express";
 import * as dotenv from "dotenv";
 dotenv.config();
+
+import { CustomRequest } from "types.js";
+import { Response, NextFunction } from "express";
 
 function setHeaders(req: CustomRequest, res: Response, next: NextFunction) {
   const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",");

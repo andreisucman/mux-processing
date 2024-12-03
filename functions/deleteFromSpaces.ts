@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import { s3Client } from "../init.js";
+import httpError from "@/helpers/httpError.js";
+import { s3Client } from "init.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 async function deleteFromSpaces(url: string) {
@@ -14,8 +15,8 @@ async function deleteFromSpaces(url: string) {
   try {
     const deleteObjectCommand = new DeleteObjectCommand(params);
     await s3Client.send(deleteObjectCommand);
-  } catch (error) {
-    console.log("Error in deleteFromSpaces", error);
+  } catch (err) {
+    throw httpError(err);
   }
 }
 

@@ -1,8 +1,8 @@
 import fs from "fs";
 import crypto from "crypto";
 import { Point } from "@vladmandic/human";
-import { TranslatedPoint } from "../types.js";
-import doWithRetries from "./doWithRetries.js";
+import { TranslatedPoint } from "types.js";
+import doWithRetries from "helpers/doWithRetries.js";
 
 export function delayExecution(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -174,33 +174,4 @@ function euclideanDistance(p1: number[], p2: number[]) {
   const dx = p1[0] - p2[0];
   const dy = p1[1] - p2[1];
   return Math.sqrt(dx * dx + dy * dy);
-}
-
-export async function createHashKey(url: string) {
-  try {
-    const arrayBuffer = await doWithRetries({
-      functionName: "createHashKey - promises",
-      functionToExecute: async () => {
-        if (url.startsWith("http")) {
-          const res = await fetch(url);
-
-          if (!res.ok) {
-            throw new Error(
-              `Failed to fetch ${url}: ${res.status} ${res.statusText}`
-            );
-          }
-          return await res.arrayBuffer();
-        } else {
-          return await fs.promises.readFile(url);
-        }
-      },
-    });
-
-    const base64String = Buffer.from(arrayBuffer).toString("base64");
-    const base64Uri = base64String.split(",").pop()
-    return crypto.createHash("sha256").update(base64Uri).digest("hex");
-  } catch (err) {
-    console.log("Error in createHashKey: ", err);
-    throw err;
-  }
 }

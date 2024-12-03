@@ -1,9 +1,10 @@
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
-import { human } from "../init.js";
-import processEye from "./processEye.js";
-import processFace from "./processFace.js";
+import { human } from "init.js";
+import processEye from "functions/processEye.js";
+import processFace from "functions/processFace.js";
+import httpError from "@/helpers/httpError.js";
 
 export async function detectWithHuman(orientedBuffer: Buffer) {
   try {
@@ -37,8 +38,7 @@ export async function detectWithHuman(orientedBuffer: Buffer) {
 
     return detection;
   } catch (err) {
-    console.log("Error in detectWithHuman: ", err);
-    throw err;
+    throw httpError(err);
   }
 }
 

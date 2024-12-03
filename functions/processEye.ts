@@ -1,12 +1,13 @@
 import fs from "fs";
-import blurEyes from "./blurEyes.js";
+import blurEyes from "functions/blurEyes.js";
 import {
   areLandmarksReliable,
   computeEyeCenter,
   computeEyeRadius,
-} from "../helpers/utils.js";
+} from "helpers/utils.js";
 import { FaceResult } from "@vladmandic/human";
-import { EyeDataType } from "../types.js";
+import { EyeDataType } from "types.js";
+import httpError from "@/helpers/httpError.js";
 
 export default async function processEye(
   detection: FaceResult,
@@ -57,7 +58,6 @@ export default async function processEye(
 
     return await blurEyes(orientedBuffer, eyeData, "png");
   } catch (err) {
-    console.log("Error in processEye: ", err);
-    throw err;
+    throw httpError(err);
   }
 }
