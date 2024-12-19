@@ -3,11 +3,10 @@ dotenv.config();
 
 import fs from "fs";
 import path from "path";
-import { CustomRequest } from "types.js";
-import { Router, Response, NextFunction } from "express";
+import { Router, Request, Response } from "express";
 import resizeVideoBuffer from "functions/resizeVideoBuffer.js";
 import transcribeVideoBuffer from "functions/transcribeVideoBuffer.js";
-import checkVideoDuration from "functions/checkVideoDuration.js";
+import getVideoDuration from "@/functions/getVideoDuration.js";
 import checkTextSafety from "functions/checkTextSafety.js";
 import extractFrames from "functions/extractFrames.js";
 import doWithRetries from "helpers/doWithRetries.js";
@@ -16,9 +15,16 @@ import httpError from "@/helpers/httpError.js";
 
 const route = Router();
 
-route.post("/", async (req: CustomRequest, res: Response) => {
+route.post("/", async (req: Request, res: Response) => {
   if (req.header("authorization") !== process.env.SECRET) {
     res.status(403).json({ message: "Access denied" });
+    return;
+  }
+
+  const userId = req.header("userid");
+
+  if (!userId) {
+    res.status(400).json({ message: "Bad request" });
     return;
   }
 
@@ -39,7 +45,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const { resizedBuffer, targetHeight, targetWidth } =
       await resizeVideoBuffer(buffer);
 
-    const durationIsValid = await checkVideoDuration(resizedBuffer);
+    const duration = (await getVideoDuration(resizedBuffer)) as number | null;
+    const durationIsValid = duration >= 5 && duration <= 15;
 
     if (!durationIsValid) {
       res.status(400).json({
@@ -58,8 +65,16 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     //   return;
     // }
 
-    const transcription = await transcribeVideoBuffer(resizedBuffer);
-    const { verdict: textIsSafe } = await checkTextSafety(transcription);
+    const transcription = await transcribeVideoBuffer({
+      videoBuffer: resizedBuffer,
+      duration,
+      userId,
+    });
+
+    const { verdict: textIsSafe } = await checkTextSafety({
+      text: transcription,
+      userId,
+    });
 
     if (!textIsSafe) {
       res

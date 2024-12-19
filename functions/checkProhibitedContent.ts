@@ -40,7 +40,7 @@ export async function checkForProhibitedContent(arrayOfFiles: string[]) {
       `${process.env.MODERATION_SERVER_URL}/multiple/multipart-form`,
       {
         method: "POST",
-        body: form,
+        body: form as BodyInit,
       }
     );
 

@@ -27,7 +27,6 @@ const route = express.Router();
 
 route.post("/", async (req: CustomRequest, res: Response) => {
   const { url, blurType } = req.body;
-  console.log("blur video req.body", req.body);
 
   if (!["face", "eyes"].includes(blurType) || !url) {
     res.status(400).json({ error: "Bad request" });
@@ -77,7 +76,6 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const existingResult = await getExistingResult({ blurType, hash });
 
     if (existingResult) {
-      console.log("blur video immediate response", existingResult);
       res.status(200).json({ message: { ...existingResult, hash } }); // return hash to make it not rerun when analysis is in progress and page reloaded
       return;
     }

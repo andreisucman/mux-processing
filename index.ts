@@ -25,6 +25,7 @@ const corsOptions = {
   allowedHeaders: [
     "Content-Type",
     "Authorization",
+    "UserId",
     "X-CSRF-Token",
     "Access-Control-Allow-Credentials",
   ],
@@ -52,10 +53,10 @@ app.use("*", setHeaders);
 app.use("/", rootRoute);
 app.use("/metrics", metrics);
 
-app.use("/transcribe", transcribe);
-
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use("/transcribe", transcribe);
+
 app.use(timeout("10m"));
 
 app.use("/blurVideo", blurVideo);

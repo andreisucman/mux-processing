@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const promClientRegister = new promClient.Registry();
 const client = new MongoClient(process.env.DATABASE_URI!);
 const db = client.db(process.env.DATABASE_NAME);
+const adminDb = client.db(process.env.ADMIN_DATABASE_NAME);
 
 const s3Client = new S3Client({
   region: process.env.DO_SPACES_REGION!,
@@ -61,4 +62,13 @@ await human.tf.ready();
 
 await human.load();
 
-export { human, client, db, s3Client, openai, __dirname, promClientRegister };
+export {
+  human,
+  client,
+  db,
+  adminDb,
+  s3Client,
+  openai,
+  __dirname,
+  promClientRegister,
+};

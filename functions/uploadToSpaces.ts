@@ -32,7 +32,7 @@ async function uploadToSpaces({
       const response = await fetch(url);
       if (!response.ok)
         throw httpError(`Failed to fetch: ${response.statusText}`);
-      buffer = new Buffer(await response.arrayBuffer());
+      buffer = Buffer.from(await response.arrayBuffer());
       mimeType = response.headers.get("content-type") || mimeType;
     }
 
@@ -57,7 +57,6 @@ async function uploadToSpaces({
     await s3Client.send(new PutObjectCommand(uploadParams));
 
     const domain = process.env.DO_SPACES_ENDPOINT!.split("https://")[1];
-    console.log("spaces", `https://${spaceName}.${domain}/${filePath}`);
 
     return `https://${spaceName}.${domain}/${filePath}`;
   } catch (err) {

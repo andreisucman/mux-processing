@@ -1,11 +1,24 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import fs from "fs";
 import tmp from "tmp";
 import ffmpeg from "fluent-ffmpeg";
-import { openai } from "init.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
+import transcribeAudio from "./transcribeAudio.js";
 
-export default async function transcribeVideoBuffer(videoBuffer: Buffer) {
+type Props = {
+  videoBuffer: Buffer;
+  duration: number;
+  userId: string;
+};
+
+export default async function transcribeVideoBuffer({
+  userId,
+  videoBuffer,
+  duration,
+}: Props) {
   let tempVideoFile;
   let tempAudioFile;
 
@@ -33,17 +46,9 @@ export default async function transcribeVideoBuffer(videoBuffer: Buffer) {
         })
     );
 
-    const response = await doWithRetries(() =>
-      openai.audio.transcriptions.create({
-        file: fs.createReadStream(audioFilePath),
-        model: "whisper-1",
-        temperature: 0,
-        prompt:
-          "The audio may contain silence. Do not make up words or symbols.",
-      })
-    );
+    const readStream = fs.createReadStream(audioFilePath);
 
-    return response.text;
+    return await transcribeAudio({ duration, userId, readStream });
   } catch (err) {
     throw httpError(err);
   } finally {

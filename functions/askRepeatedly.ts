@@ -1,17 +1,26 @@
-import askGpt from "@/functions/askGpt.js";
+import askOpenAi from "@/functions/askOpenAi.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import { MessageType, RoleEnum, RunType } from "types.js";
 import httpError from "@/helpers/httpError.js";
 
 type Props = {
   runs: RunType[];
-  seed?: number;
+  userId: string;
+  functionName: string;
   systemContent: string;
   isResultString?: boolean;
 };
 
-async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
+async function askRepeatedly({
+  runs,
+  userId,
+  functionName,
+  systemContent,
+  isResultString,
+}: Props) {
   try {
+    if (!userId) throw httpError("Missing userId");
+
     let result;
     let conversation: MessageType[] = [
       { role: "system" as RoleEnum, content: systemContent },
@@ -23,8 +32,10 @@ async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
         content: runs[i].content,
       } as MessageType);
 
-      const response = await doWithRetries(async () =>
-        askGpt({
+      result = await doWithRetries(async () =>
+        askOpenAi({
+          userId,
+          functionName,
           model: runs[i].model,
           messages: conversation,
           isMini: runs[i].isMini,
@@ -32,8 +43,6 @@ async function askRepeatedly({ runs, systemContent, isResultString }: Props) {
           isJson: isResultString ? false : i === runs.length - 1,
         })
       );
-
-      result = response.result;
 
       conversation.push({
         role: "assistant" as RoleEnum,
