@@ -77,8 +77,9 @@ async function askOpenAi({
       : DEFAULT_4O_OUTPUT_PRICE;
 
     const unitCost =
-      (inputTokens / (inputTokens + outputTokens)) * Number(inputPrice) +
-      (outputTokens / (inputTokens + outputTokens)) * Number(outputPrice);
+      ((inputTokens / (inputTokens + outputTokens)) * Number(inputPrice) +
+        (outputTokens / (inputTokens + outputTokens)) * Number(outputPrice)) /
+      1000000;
 
     updateSpend({
       functionName,

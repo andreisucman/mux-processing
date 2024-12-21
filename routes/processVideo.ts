@@ -7,10 +7,10 @@ import { Router, Request, Response } from "express";
 import resizeVideoBuffer from "functions/resizeVideoBuffer.js";
 import transcribeVideoBuffer from "functions/transcribeVideoBuffer.js";
 import getVideoDuration from "@/functions/getVideoDuration.js";
-import checkTextSafety from "functions/checkTextSafety.js";
 import extractFrames from "functions/extractFrames.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import uploadToSpaces from "functions/uploadToSpaces.js";
+import moderateContent from "@/functions/moderateContent.js";
 import httpError from "@/helpers/httpError.js";
 
 const route = Router();
@@ -56,36 +56,33 @@ route.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // const { status: videoIsSafe } = await checkVideoSafety(resizedBuffer);
-
-    // if (!videoIsSafe) {
-    //   res
-    //     .status(400)
-    //     .json({ status: false, message: "Video contains prohibited content" });
-    //   return;
-    // }
-
     const transcription = await transcribeVideoBuffer({
       videoBuffer: resizedBuffer,
       duration,
       userId,
     });
 
-    const { verdict: textIsSafe } = await checkTextSafety({
-      text: transcription,
-      userId,
+    const isAudioSafe = await moderateContent({
+      content: [{ type: "text", text: transcription }],
     });
 
-    if (!textIsSafe) {
+    if (!isAudioSafe) {
       res
         .status(400)
-        .json({ status: false, message: "Speech contains prohibited content" });
+        .json({ status: false, error: "Audio contains prohibited content." });
       return;
+    }
+
+    const timestamps = [];
+    const timestampSpace = Math.floor(100 / duration);
+
+    for (let i = 1; i < Math.floor(duration) + 1; i++) {
+      timestamps.push(`${i * timestampSpace}%`);
     }
 
     urlsFolder = await extractFrames({
       input: resizedBuffer,
-      timestamps: ["25%", "50%", "75%"],
+      timestamps,
       width: targetWidth,
       height: targetHeight,
     });
@@ -107,6 +104,10 @@ route.post("/", async (req: Request, res: Response) => {
     res
       .status(500)
       .send({ message: "Error processing video", error: error.message });
+  } finally {
+    if (fs.existsSync(urlsFolder)) {
+      fs.rmSync(urlsFolder, { recursive: true, force: true });
+    }
   }
 });
 

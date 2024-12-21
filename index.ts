@@ -4,7 +4,7 @@ import cors from "cors";
 import timeout from "connect-timeout";
 import rateLimit from "express-rate-limit";
 import setHeaders from "middleware/setHeaders.js";
-import analyzeVideo from "routes/analyzeVideo.js";
+import processVideo from "@/routes/processVideo.js";
 import blurVideo from "routes/blurVideo.js";
 import blurImage from "routes/blurImage.js";
 import transcribe from "routes/transcribe.js";
@@ -61,7 +61,7 @@ app.use(timeout("10m"));
 
 app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
-app.use("/analyzeVideo", analyzeVideo);
+app.use("/processVideo", processVideo);
 
 app.use(errorHandler);
 

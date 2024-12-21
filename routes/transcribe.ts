@@ -51,9 +51,10 @@ route.post(
         const validOrigin = (audioFile as string).startsWith(
           `https://${process.env.DO_SPACES_BUCKET_NAME}`
         );
-        if (validOrigin) {
-          audioBuffer = await fromUrlToBuffer(audioFile);
-        }
+
+        if (!validOrigin) throw httpError(`Invalid audio origin: ${audioFile}`);
+        
+        audioBuffer = await fromUrlToBuffer(audioFile);
       }
 
       const duration = (await getAudioDuration(audioBuffer)) as number | null;

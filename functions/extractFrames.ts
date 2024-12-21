@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import os from "os";
 import fs from "fs";
 import path from "path";
+import httpError from "@/helpers/httpError.js";
 
 type ExtractFramesProps = {
   width?: number;
@@ -27,11 +28,11 @@ export default async function extractFrames({
     if (Buffer.isBuffer(input)) {
       tempFilePath = path.join(tempDir, `temp-video-${nanoid()}.mp4`);
       fs.writeFileSync(tempFilePath, input);
-      input = tempFilePath; // Reassign `input` as a string file path
+      input = tempFilePath;
     }
 
     if (typeof input !== "string") {
-      throw new Error(
+      throw httpError(
         "Invalid input type. Input must be a file path or Buffer."
       );
     }
