@@ -2,10 +2,12 @@ import { ObjectId } from "mongodb";
 import doWithRetries from "@/helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
 import { adminDb } from "@/init.js";
+import { CategoryNameEnum } from "@/types.js";
 
 type Props = {
   userId: string;
   functionName: string;
+  categoryName: CategoryNameEnum;
   modelName: string;
   units: number;
   unitCost: number;
@@ -14,6 +16,7 @@ type Props = {
 export default async function updateSpend({
   userId,
   functionName,
+  categoryName,
   modelName,
   units,
   unitCost,
@@ -22,13 +25,19 @@ export default async function updateSpend({
 
   try {
     await doWithRetries(async () =>
-      adminDb.collection("UserSpend").updateOne(
+      adminDb.collection("UserCost").updateOne(
         { userId: new ObjectId(userId), createdAt: today },
         {
           $inc: {
-            [`units.function.${functionName}`]: units,
-            [`cost.function.${functionName}`]: units * unitCost,
-            [`unitCost.function.${functionName}`]: unitCost,
+            [`units.functions.${functionName}`]: units,
+            [`cost.functions.${functionName}`]: units * unitCost,
+            [`unitCost.functions.${functionName}`]: unitCost,
+            [`units.models.${modelName}`]: units,
+            [`cost.models.${modelName}`]: units * unitCost,
+            [`unitCost.models.${modelName}`]: unitCost,
+            [`units.categories.${categoryName}`]: units,
+            [`cost.categories.${categoryName}`]: units * unitCost,
+            [`unitCost.categories.${categoryName}`]: unitCost,
           },
         },
         {
@@ -38,16 +47,19 @@ export default async function updateSpend({
     );
 
     await doWithRetries(async () =>
-      adminDb.collection("TotalSpend").updateOne(
+      adminDb.collection("TotalCost").updateOne(
         { createdAt: today },
         {
           $inc: {
-            [`units.function.${functionName}`]: units,
-            [`cost.function.${functionName}`]: units * unitCost,
-            [`unitCost.function.${functionName}`]: unitCost,
-            [`units.model.${modelName}`]: units,
-            [`cost.model.${modelName}`]: units * unitCost,
-            [`unitCost.model.${modelName}`]: unitCost,
+            [`units.functions.${functionName}`]: units,
+            [`cost.functions.${functionName}`]: units * unitCost,
+            [`unitCost.functions.${functionName}`]: unitCost,
+            [`units.models.${modelName}`]: units,
+            [`cost.models.${modelName}`]: units * unitCost,
+            [`unitCost.models.${modelName}`]: unitCost,
+            [`units.categories.${categoryName}`]: units,
+            [`cost.categories.${categoryName}`]: units * unitCost,
+            [`unitCost.categories.${categoryName}`]: unitCost,
           },
         },
         {

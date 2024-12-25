@@ -10,7 +10,6 @@ import getVideoDuration from "@/functions/getVideoDuration.js";
 import extractFrames from "functions/extractFrames.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import uploadToSpaces from "functions/uploadToSpaces.js";
-import moderateContent from "@/functions/moderateContent.js";
 import httpError from "@/helpers/httpError.js";
 
 const route = Router();
@@ -62,17 +61,6 @@ route.post("/", async (req: Request, res: Response) => {
       userId,
     });
 
-    const isAudioSafe = await moderateContent({
-      content: [{ type: "text", text: transcription }],
-    });
-
-    if (!isAudioSafe) {
-      res
-        .status(400)
-        .json({ status: false, error: "Audio contains prohibited content." });
-      return;
-    }
-
     const timestamps = [];
     const timestampSpace = Math.floor(100 / duration);
 
@@ -98,7 +86,7 @@ route.post("/", async (req: Request, res: Response) => {
 
     const urls = await doWithRetries(() => Promise.all(uploadPromises));
 
-    res.status(200).json({ status: true, message: urls });
+    res.status(200).json({ status: true, message: { urls, transcription } });
   } catch (error) {
     console.error("Error processing video:", error);
     res

@@ -11,6 +11,8 @@ type Props = {
 };
 
 export default async function moderateContent({ content }: Props) {
+  let isSafe = true;
+
   try {
     const moderation = await doWithRetries(async () =>
       openai.moderations.create({
@@ -20,8 +22,6 @@ export default async function moderateContent({ content }: Props) {
     );
 
     const { results } = moderation;
-
-    let isSafe = true;
 
     for (const result of results) {
       const { category_scores } = result;
@@ -33,9 +33,10 @@ export default async function moderateContent({ content }: Props) {
         }
       }
     }
-
-    return isSafe;
   } catch (err) {
+    isSafe = false;
     throw httpError(err);
+  } finally {
+    return isSafe;
   }
 }
