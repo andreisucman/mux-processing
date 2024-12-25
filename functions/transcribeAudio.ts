@@ -11,12 +11,14 @@ type Props = {
   duration: number;
   userId: string;
   readStream: ReadStream;
+  categoryName: string;
 };
 
 export default async function transcribeAudio({
   duration,
   userId,
   readStream,
+  categoryName,
 }: Props) {
   try {
     const model = "whisper-1";
@@ -38,6 +40,7 @@ export default async function transcribeAudio({
       functionName: "transcribeAudio",
       modelName: model,
       unitCost,
+      categoryName,
       units,
       userId,
     });

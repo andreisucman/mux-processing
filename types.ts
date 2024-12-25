@@ -48,15 +48,3 @@ export type TranslatedPoint = {
   x: number;
   y: number;
 };
-
-export enum CategoryNameEnum {
-  TASKS = "tasks",
-  PROGRESSSCAN = "progressScan",
-  FOODSCAN = "foodScan",
-  STYLESCAN = "styleScan",
-  PRODUCTS = "products",
-  ADVISOR = "advisor",
-  ABOUT = "about",
-  PROOF = "proof",
-  OTHER = "other",
-}

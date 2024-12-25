@@ -2,12 +2,11 @@ import { ObjectId } from "mongodb";
 import doWithRetries from "@/helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
 import { adminDb } from "@/init.js";
-import { CategoryNameEnum } from "@/types.js";
 
 type Props = {
   userId: string;
   functionName: string;
-  categoryName: CategoryNameEnum;
+  categoryName: string;
   modelName: string;
   units: number;
   unitCost: number;
@@ -25,7 +24,7 @@ export default async function updateSpend({
 
   try {
     await doWithRetries(async () =>
-      adminDb.collection("UserCost").updateOne(
+      adminDb.collection("UserStats").updateOne(
         { userId: new ObjectId(userId), createdAt: today },
         {
           $inc: {
@@ -47,7 +46,7 @@ export default async function updateSpend({
     );
 
     await doWithRetries(async () =>
-      adminDb.collection("TotalCost").updateOne(
+      adminDb.collection("TotalStats").updateOne(
         { createdAt: today },
         {
           $inc: {

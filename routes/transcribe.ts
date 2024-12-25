@@ -21,7 +21,8 @@ route.post(
   "/",
   upload.single("file"),
   async (req: Request, res: Response, next: NextFunction) => {
-    if (req.header("authorization") !== process.env.SECRET) {
+    
+    if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
       res.status(403).json({ message: "Access denied" });
       return;
     }
@@ -70,6 +71,7 @@ route.post(
         duration,
         readStream,
         userId,
+        categoryName: req.body.categoryName
       });
 
       await fs.promises.unlink(tempFilePath);
