@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import doWithRetries from "@/helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
 import { adminDb } from "@/init.js";
+import setUtcMidnight from "@/helpers/setUtcMidnight.js";
 
 type Props = {
   userId: string;
@@ -20,24 +21,25 @@ export default async function updateSpend({
   units,
   unitCost,
 }: Props) {
-  const today = new Date().toDateString();
+  const createdAt = setUtcMidnight({ date: new Date() });
+
+  const incrementPayload = {
+    "accounting.totalCost": units * unitCost,
+    "accounting.totalUnits": units,
+    [`accounting.units.functions.${functionName}`]: units,
+    [`accounting.cost.functions.${functionName}`]: units * unitCost,
+    [`accounting.units.models.${modelName}`]: units,
+    [`accounting.cost.models.${modelName}`]: units * unitCost,
+    [`accounting.units.categories.${categoryName}`]: units,
+    [`accounting.cost.categories.${categoryName}`]: units * unitCost,
+  };
 
   try {
     await doWithRetries(async () =>
-      adminDb.collection("UserStats").updateOne(
-        { userId: new ObjectId(userId), createdAt: today },
+      adminDb.collection("UserAnalytics").updateOne(
+        { userId: new ObjectId(userId), createdAt },
         {
-          $inc: {
-            [`units.functions.${functionName}`]: units,
-            [`cost.functions.${functionName}`]: units * unitCost,
-            [`unitCost.functions.${functionName}`]: unitCost,
-            [`units.models.${modelName}`]: units,
-            [`cost.models.${modelName}`]: units * unitCost,
-            [`unitCost.models.${modelName}`]: unitCost,
-            [`units.categories.${categoryName}`]: units,
-            [`cost.categories.${categoryName}`]: units * unitCost,
-            [`unitCost.categories.${categoryName}`]: unitCost,
-          },
+          $inc: incrementPayload,
         },
         {
           upsert: true,
@@ -46,20 +48,10 @@ export default async function updateSpend({
     );
 
     await doWithRetries(async () =>
-      adminDb.collection("TotalStats").updateOne(
-        { createdAt: today },
+      adminDb.collection("TotalAnalytics").updateOne(
+        { createdAt },
         {
-          $inc: {
-            [`units.functions.${functionName}`]: units,
-            [`cost.functions.${functionName}`]: units * unitCost,
-            [`unitCost.functions.${functionName}`]: unitCost,
-            [`units.models.${modelName}`]: units,
-            [`cost.models.${modelName}`]: units * unitCost,
-            [`unitCost.models.${modelName}`]: unitCost,
-            [`units.categories.${categoryName}`]: units,
-            [`cost.categories.${categoryName}`]: units * unitCost,
-            [`unitCost.categories.${categoryName}`]: unitCost,
-          },
+          $inc: incrementPayload,
         },
         {
           upsert: true,
