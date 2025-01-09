@@ -11,6 +11,7 @@ export async function detectWithHuman(orientedBuffer: Buffer) {
     const tensor = human.tf.tidy(() => {
       const decode = human.tf.node.decodeImage(orientedBuffer, 3);
       let expand;
+
       if (decode.shape[2] === 4) {
         const channels = human.tf.split(decode, 4, 2);
         const rgb = human.tf.stack([channels[0], channels[1], channels[2]], 2);
@@ -23,6 +24,7 @@ export async function detectWithHuman(orientedBuffer: Buffer) {
       } else {
         expand = human.tf.expandDims(decode, 0);
       }
+
       const cast = human.tf.cast(expand, "float32");
       return cast;
     });
@@ -30,13 +32,7 @@ export async function detectWithHuman(orientedBuffer: Buffer) {
     const result = await human.detect(tensor);
     human.tf.dispose(tensor);
 
-    if (!result.face.length) {
-      return null;
-    }
-
-    const detection = result.face[0];
-
-    return detection;
+    return result;
   } catch (err) {
     throw httpError(err);
   }
@@ -71,16 +67,16 @@ export async function processFrame({
 
     const orientedBuffer = await sharp(frameBuffer).rotate().toBuffer();
 
-    const detection = await detectWithHuman(orientedBuffer);
+    const result = await detectWithHuman(orientedBuffer);
 
-    if (detection) {
+    if (result && result.face.length > 0) {
       let resultBuffer;
 
       if (blurType === "face") {
-        resultBuffer = await processFace(detection, orientedBuffer);
+        resultBuffer = await processFace(result.face[0], orientedBuffer);
       } else {
         resultBuffer = await processEye(
-          detection,
+          result.face[0],
           outputFramePath,
           orientedBuffer
         );

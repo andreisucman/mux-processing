@@ -1,12 +1,12 @@
 import askOpenAi from "@/functions/askOpenAi.js";
 import doWithRetries from "helpers/doWithRetries.js";
-import { CategoryNameEnum, MessageType, RoleEnum, RunType } from "types.js";
+import { MessageType, RoleEnum, RunType } from "types.js";
 import httpError from "@/helpers/httpError.js";
 
 type Props = {
   runs: RunType[];
   userId: string;
-  categoryName: CategoryNameEnum;
+  categoryName: string;
   functionName: string;
   systemContent: string;
   isResultString?: boolean;

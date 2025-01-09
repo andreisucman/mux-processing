@@ -28,35 +28,25 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const humanConfig = {
-  backend: "tensorflow" as BackendEnum,
+const myConfig = {
   modelBasePath: "file://models/",
-  debug: true,
-  async: false,
-  filter: {
-    enabled: true,
-    flip: true,
-  },
+  debug: false,
   face: {
-    enabled: true,
-    detector: { enabled: true, rotation: true }, // Enable rotation estimation
-    mesh: { enabled: true },
-    iris: { enabled: true },
-    description: { enabled: false },
     emotion: { enabled: false },
-  },
-  hand: {
-    enabled: false,
-  },
-  body: {
-    enabled: false,
-  },
-  object: {
-    enabled: false,
-  },
+    detector: {
+      enabled: true,
+      rotation: true,
+      maxDetected: 2,
+      minConfidence: 0.2,
+      square: false,
+    },
+  }, // Enable rotation estimation
+  body: { enabled: false },
+  hand: { enabled: false },
+  gesture: { enabled: false },
 };
 
-const human = new Human(humanConfig);
+const human = new Human(myConfig);
 
 await human.tf.ready();
 

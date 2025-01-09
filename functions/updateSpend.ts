@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import doWithRetries from "@/helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
-import { adminDb } from "@/init.js";
+import { adminDb, db } from "@/init.js";
 import setUtcMidnight from "@/helpers/setUtcMidnight.js";
 
 type Props = {
@@ -22,16 +22,17 @@ export default async function updateSpend({
   unitCost,
 }: Props) {
   const createdAt = setUtcMidnight({ date: new Date() });
+  const totalCost = units * unitCost;
 
   const incrementPayload = {
-    "accounting.totalCost": units * unitCost,
+    "accounting.totalCost": totalCost,
     "accounting.totalUnits": units,
     [`accounting.units.functions.${functionName}`]: units,
-    [`accounting.cost.functions.${functionName}`]: units * unitCost,
+    [`accounting.cost.functions.${functionName}`]: totalCost,
     [`accounting.units.models.${modelName}`]: units,
-    [`accounting.cost.models.${modelName}`]: units * unitCost,
+    [`accounting.cost.models.${modelName}`]: totalCost,
     [`accounting.units.categories.${categoryName}`]: units,
-    [`accounting.cost.categories.${categoryName}`]: units * unitCost,
+    [`accounting.cost.categories.${categoryName}`]: totalCost,
   };
 
   try {
@@ -52,6 +53,18 @@ export default async function updateSpend({
         { createdAt },
         {
           $inc: incrementPayload,
+        },
+        {
+          upsert: true,
+        }
+      )
+    );
+
+    await doWithRetries(async () =>
+      db.collection("User").updateOne(
+        { _id: new ObjectId(userId) },
+        {
+          $inc: { netBenefit: totalCost * -1 },
         },
         {
           upsert: true,

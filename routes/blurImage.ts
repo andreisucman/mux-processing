@@ -57,16 +57,20 @@ route.post(
       const buffer = Buffer.from(await response.arrayBuffer());
 
       const orientedBuffer = await sharp(buffer).rotate().toBuffer();
-      const detection = await detectWithHuman(orientedBuffer);
+      const result = await detectWithHuman(orientedBuffer);
 
       let resultUrl;
       let resultBuffer;
 
-      if (detection) {
+      if (result && result.face.length > 0) {
         if (blurType === "face") {
-          resultBuffer = await processFace(detection, orientedBuffer);
+          resultBuffer = await processFace(result.face[0], orientedBuffer);
         } else {
-          resultBuffer = await processEye(detection, tempPath, orientedBuffer);
+          resultBuffer = await processEye(
+            result.face[0],
+            tempPath,
+            orientedBuffer
+          );
         }
       } else {
         resultBuffer = orientedBuffer;

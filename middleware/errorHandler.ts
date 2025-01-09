@@ -17,7 +17,7 @@ const errorHandler = (
   if (res.headersSent) return;
 
   res.status(err.status || 500).json({
-    message: err.message || "Server error",
+    message: err.error || "Server error",
     status: err.status || 500,
   });
 };

@@ -13,6 +13,8 @@ import metrics from "routes/metrics.js";
 import rootRoute from "routes/rootRoute.js";
 import logCapturer from "middleware/logCapturer.js";
 import errorHandler from "middleware/errorHandler.js";
+import createHumanEmbedding from "routes/createHumanEmbedding.js";
+import createCollage from "routes/createCollage.js";
 import { client } from "init.js";
 
 client.connect();
@@ -62,6 +64,8 @@ app.use(timeout("10m"));
 app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
 app.use("/processVideo", processVideo);
+app.use("/createHumanEmbedding", createHumanEmbedding);
+app.use("/createCollage", createCollage);
 
 app.use(errorHandler);
 

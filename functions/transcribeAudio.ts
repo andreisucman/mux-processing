@@ -29,7 +29,7 @@ export default async function transcribeAudio({
         model,
         temperature: 0,
         prompt:
-          "The audio may contain silence. Do not make up words or symbols.",
+          "The audio may contain silence. Do not make up words or symbols. Don't add anything additional.",
       })
     );
 
