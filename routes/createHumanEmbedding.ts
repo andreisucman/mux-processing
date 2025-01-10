@@ -41,15 +41,15 @@ route.post(
       const result = await detectWithHuman(orientedBuffer);
 
       if (!result || !result.face || result.face.length === 0) {
-        throw new Error("Can't see any people on the image.");
+        throw new Error("person not found");
       }
 
       if (result.face.length > 1) {
-        throw new Error("Not more than one person on the image.");
+        throw new Error("more than one person");
       }
 
       if (result.face[0].age <= 17) {
-        throw new Error("The person on the image appears to be a minor.");
+        throw new Error("minor");
       }
 
       res.status(200).json({ message: result.face[0].embedding });

@@ -37,8 +37,7 @@ const myConfig = {
       enabled: true,
       rotation: true,
       maxDetected: 2,
-      minConfidence: 0.2,
-      square: false,
+      minConfidence: 0.1,
     },
   }, // Enable rotation estimation
   body: { enabled: false },
