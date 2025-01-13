@@ -4,49 +4,50 @@ import express, { Response, NextFunction } from "express";
 import { CustomRequest } from "types.js";
 import { __dirname } from "init.js";
 import doWithRetries from "helpers/doWithRetries.js";
-import combineImages from "@/functions/combineImages.js";
-import httpError from "@/helpers/httpError.js";
+import createCollage from "@/functions/createCollage.js";
 import uploadToSpaces from "@/functions/uploadToSpaces.js";
 
 const route = express.Router();
 
+type Props = { images: string[][] };
+
 route.post(
   "/",
   async (req: CustomRequest, res: Response, next: NextFunction) => {
-    if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
-      res.status(403).json({ message: "Access denied" });
-      return;
-    }
+    // if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
+    //   res.status(403).json({ message: "Access denied" });
+    //   return;
+    // }
 
-    const { images } = req.body;
+    const { images }: Props = req.body;
 
-    if (!images || images.length > 4 || images.length === 0) {
+    if (!images || images.length > 3 || images.length === 0) {
       res.status(400).json({ error: "Bad request" });
       return;
     }
 
     try {
-      const imagePromises = images.map((image: string) =>
-        doWithRetries(async () => fetch(image))
-      );
+      const bufferGroups = [];
 
-      const responses = await Promise.all(imagePromises);
-
-      const notOkResponse = responses.find((response) => !response.ok);
-
-      if (notOkResponse) {
-        throw httpError(
-          `Failed to fetch the first image: ${notOkResponse.statusText}`
+      for (const group of images) {
+        const promises = group.map((image) =>
+          doWithRetries(async () => fetch(image))
         );
+        const responses = await Promise.all(promises);
+
+        const buffers = [];
+
+        for (const response of responses) {
+          buffers.push(Buffer.from(await response.arrayBuffer()));
+        }
+
+        bufferGroups.push(buffers);
       }
 
-      const buffers = await Promise.all(
-        responses.map(async (response) => {
-          return Buffer.from(await response.arrayBuffer());
-        })
-      );
-
-      const combinedImage = await combineImages(buffers);
+      const combinedImage = await createCollage({
+        bufferGroups,
+        collageSize: 1120,
+      });
 
       const combinedUrl = await uploadToSpaces({
         buffer: combinedImage,
