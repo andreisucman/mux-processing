@@ -4,12 +4,12 @@ import express, { Response, NextFunction } from "express";
 import { CustomRequest } from "types.js";
 import { __dirname } from "init.js";
 import doWithRetries from "helpers/doWithRetries.js";
-import createCollage from "@/functions/createCollage.js";
 import uploadToSpaces from "@/functions/uploadToSpaces.js";
+import createGridCollage from "@/functions/createGridCollage.js";
 
 const route = express.Router();
 
-type Props = { images: string[][] };
+type Props = { images: string[]; collageSize?: number };
 
 route.post(
   "/",
@@ -19,34 +19,37 @@ route.post(
     //   return;
     // }
 
-    const { images }: Props = req.body;
+    const { images, collageSize = 1120 }: Props = req.body;
 
-    if (!images || images.length > 3 || images.length === 0) {
+    console.log("req.body", req.body);
+    if (
+      !images ||
+      images.length > 3 ||
+      images.length === 0 ||
+      collageSize > 2048
+    ) {
       res.status(400).json({ error: "Bad request" });
       return;
     }
 
     try {
-      const bufferGroups = [];
+      const imagePromises = images.map((image) =>
+        doWithRetries(async () => fetch(image))
+      );
 
-      for (const group of images) {
-        const promises = group.map((image) =>
-          doWithRetries(async () => fetch(image))
-        );
-        const responses = await Promise.all(promises);
+      const imageResponses = await Promise.all(imagePromises);
 
-        const buffers = [];
+      const bufferPromises = imageResponses.map((imageResponse) =>
+        doWithRetries(async () =>
+          Buffer.from(await imageResponse.arrayBuffer())
+        )
+      );
 
-        for (const response of responses) {
-          buffers.push(Buffer.from(await response.arrayBuffer()));
-        }
+      const imageBuffers = await Promise.all(bufferPromises);
 
-        bufferGroups.push(buffers);
-      }
-
-      const combinedImage = await createCollage({
-        bufferGroups,
-        collageSize: 1120,
+      const combinedImage = await createGridCollage({
+        imageBuffers,
+        collageSize,
       });
 
       const combinedUrl = await uploadToSpaces({

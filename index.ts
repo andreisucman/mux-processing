@@ -14,7 +14,8 @@ import rootRoute from "routes/rootRoute.js";
 import logCapturer from "middleware/logCapturer.js";
 import errorHandler from "middleware/errorHandler.js";
 import createHumanEmbedding from "routes/createHumanEmbedding.js";
-import createCollage from "routes/createCollage.js";
+import createGroupCollage from "@/routes/createGroupCollage.js";
+import createGridCollage from "@/routes/createGridCollage.js";
 import { client } from "init.js";
 
 client.connect();
@@ -65,7 +66,8 @@ app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
 app.use("/processVideo", processVideo);
 app.use("/createHumanEmbedding", createHumanEmbedding);
-app.use("/createCollage", createCollage);
+app.use("/createGroupCollage", createGroupCollage);
+app.use("/createGridCollage", createGridCollage);
 
 app.use(errorHandler);
 

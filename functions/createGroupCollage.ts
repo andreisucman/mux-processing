@@ -6,7 +6,7 @@ type Props = {
   collageSize: number;
 };
 
-export default async function createCollage({
+export default async function createGroupCollage({
   bufferGroups,
   collageSize,
 }: Props): Promise<Buffer> {
