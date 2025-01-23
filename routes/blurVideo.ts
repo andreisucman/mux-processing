@@ -54,7 +54,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const { resizedBuffer, targetHeight, targetWidth } =
+    const { resizedBuffer, targetHeight, targetWidth, frameRate = 30 } =
       await resizeVideoBuffer(buffer);
 
     fs.writeFileSync(videoPath, resizedBuffer);
@@ -97,6 +97,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     await new Promise((resolve, reject) => {
       ffmpeg(videoPath)
+        .inputOptions("-r", `${frameRate}`)
         .output(path.join(framesDir, "frame-%04d.png"))
         .videoFilter("scale='if(gt(iw,ih),1280,-1)':'if(gt(ih,iw),1280,-1)'")
         .on("end", resolve)
@@ -134,7 +135,7 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     await new Promise((resolve, reject) => {
       ffmpeg(path.join(processedFramesDir, "frame-%04d.png"))
-        .inputOptions(["-framerate 30", "-start_number 1"])
+        .inputOptions([`-framerate ${frameRate}`, "-start_number 1"])
         .input(videoPath)
         .outputOptions([
           "-c:v",

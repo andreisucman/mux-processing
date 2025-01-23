@@ -80,7 +80,12 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
       fs.promises.readFile(outputFilePath)
     );
 
-    return { resizedBuffer, targetHeight, targetWidth };
+    return {
+      resizedBuffer,
+      targetHeight,
+      targetWidth,
+      frameRate: videoStream.r_frame_rate,
+    };
   } catch (err) {
     throw httpError(err);
   } finally {

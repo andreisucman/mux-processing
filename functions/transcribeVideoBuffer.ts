@@ -12,12 +12,14 @@ type Props = {
   videoBuffer: Buffer;
   duration: number;
   userId: string;
+  categoryName: string;
 };
 
 export default async function transcribeVideoBuffer({
   userId,
   videoBuffer,
   duration,
+  categoryName,
 }: Props) {
   let tempVideoFile;
   let tempAudioFile;
@@ -48,7 +50,12 @@ export default async function transcribeVideoBuffer({
 
     const readStream = fs.createReadStream(audioFilePath);
 
-    return await transcribeAudio({ duration, userId, readStream });
+    return await transcribeAudio({
+      categoryName,
+      duration,
+      userId,
+      readStream,
+    });
   } catch (err) {
     throw httpError(err);
   } finally {

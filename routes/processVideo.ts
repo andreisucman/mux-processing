@@ -15,7 +15,6 @@ import httpError from "@/helpers/httpError.js";
 const route = Router();
 
 route.post("/", async (req: Request, res: Response) => {
-  
   if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
     res.status(403).json({ message: "Access denied" });
     return;
@@ -60,6 +59,7 @@ route.post("/", async (req: Request, res: Response) => {
       videoBuffer: resizedBuffer,
       duration,
       userId,
+      categoryName: "proof",
     });
 
     const timestamps = [];

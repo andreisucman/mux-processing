@@ -21,7 +21,6 @@ route.post(
 
     const { images, collageSize = 1120 }: Props = req.body;
 
-    console.log("req.body", req.body);
     if (
       !images ||
       images.length > 3 ||

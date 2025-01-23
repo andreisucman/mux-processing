@@ -20,7 +20,6 @@ export default async function createGridCollage({
       })
     );
 
-    console.log("collageSize", collageSize);
     const combinedImage = sharp({
       create: {
         width: collageSize,
