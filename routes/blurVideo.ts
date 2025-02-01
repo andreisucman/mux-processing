@@ -139,8 +139,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          "libopenh264",
-          // "libx264", // or libopenh264
+          // "libopenh264",
+          "libx264", // or libopenh264
           "-preset",
           "fast",
           "-threads",

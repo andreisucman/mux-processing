@@ -35,7 +35,7 @@ export default async function createGridCollage({
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
 
-      const imageBuffer = await resizedImages[i].toBuffer();
+      const imageBuffer = await resizedImages[i].toFormat("jpeg").toBuffer();
       const position = {
         top: row * cellSize,
         left: col * cellSize,

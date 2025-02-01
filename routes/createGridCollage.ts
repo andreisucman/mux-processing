@@ -31,6 +31,8 @@ route.post(
       return;
     }
 
+    console.log("images", images, "collageSize", collageSize);
+
     try {
       const imagePromises = images.map((image) =>
         doWithRetries(async () => fetch(image))
@@ -55,6 +57,8 @@ route.post(
         buffer: combinedImage,
         mimeType: "image/webp",
       });
+
+      console.log("combinedUrl", combinedUrl);
 
       res.status(200).json({ message: combinedUrl });
     } catch (err) {

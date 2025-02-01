@@ -4,7 +4,7 @@ dotenv.config();
 import { openai } from "init.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
-import { CategoryNameEnum, MessageType } from "@/types.js";
+import {  MessageType } from "@/types.js";
 import updateSpend from "./updateSpend.js";
 
 const {
@@ -26,7 +26,7 @@ type AskOpenaiProps = {
   isMini: boolean;
   isJson: boolean;
   functionName: string;
-  categoryName: CategoryNameEnum;
+  categoryName: string;
 };
 
 async function askOpenAi({
