@@ -63,12 +63,12 @@ app.use("/transcribe", checkAccess, transcribe);
 
 app.use(timeout("5m"));
 
-app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
+app.use("/createHumanEmbedding", createHumanEmbedding);
+app.use("/createGroupCollage", createGroupCollage);
+app.use("/createGridCollage", createGridCollage);
+app.use("/blurVideo", checkAccess, blurVideo);
 app.use("/processVideo", checkAccess, processVideo);
-app.use("/createHumanEmbedding", checkAccess, createHumanEmbedding);
-app.use("/createGroupCollage", checkAccess, createGroupCollage);
-app.use("/createGridCollage", checkAccess, createGridCollage);
 
 app.use(errorHandler);
 

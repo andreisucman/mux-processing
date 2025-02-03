@@ -53,8 +53,6 @@ route.post(
         mimeType: "image/webp",
       });
 
-      console.log("combinedUrl", combinedUrl);
-
       res.status(200).json({ message: combinedUrl });
     } catch (err) {
       next(err);
