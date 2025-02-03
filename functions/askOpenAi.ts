@@ -4,24 +4,16 @@ dotenv.config();
 import { openai } from "init.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import httpError from "@/helpers/httpError.js";
-import {  MessageType } from "@/types.js";
 import updateSpend from "./updateSpend.js";
-
-const {
-  DEFAULT_4O_MINI_INPUT_PRICE,
-  DEFAULT_4O_MINI_OUTPUT_PRICE,
-  DEFAULT_4O_INPUT_PRICE,
-  DEFAULT_4O_OUTPUT_PRICE,
-  FINETUNED_4O_MINI_INPUT_PRICE,
-  FINETUNED_4O_MINI_OUTPUT_PRICE,
-  FINETUNED_4O_INPUT_PRICE,
-  FINETUNED_4O_OUTPUT_PRICE,
-} = process.env;
+import { ChatCompletionCreateParams } from "openai/resources/index.mjs";
+import getCompletionCost from "@/helpers/getCompletionCost.js";
+import { ChatCompletionMessageParam } from "openai/src/resources/index.js";
 
 type AskOpenaiProps = {
   userId: string;
+  seed?: number;
   model?: string;
-  messages: MessageType[];
+  messages: ChatCompletionMessageParam[];
   responseFormat?: any;
   isMini: boolean;
   isJson: boolean;
@@ -29,25 +21,27 @@ type AskOpenaiProps = {
   categoryName: string;
 };
 
-async function askOpenAi({
+async function askOpenai({
   messages,
+  seed,
   model,
   functionName,
-  isMini,
-  userId,
-  responseFormat,
   categoryName,
+  userId,
+  isMini,
+  responseFormat,
   isJson = true,
 }: AskOpenaiProps) {
-  try {
-    const finalModel = model
-      ? model
-      : isMini
-      ? process.env.MODEL_MINI
-      : process.env.MODEL;
+  const finalModel = model
+    ? model
+    : isMini
+    ? process.env.GPT_4O_MINI
+    : process.env.GPT_4O;
 
-    const options: { [key: string]: any } = {
+  try {
+    const options: ChatCompletionCreateParams = {
       messages,
+      seed,
       model: finalModel,
       temperature: 0,
     };
@@ -56,39 +50,25 @@ async function askOpenAi({
     if (responseFormat) options.response_format = responseFormat;
 
     const completion = await doWithRetries(async () =>
-      openai.chat.completions.create(options as any)
+      openai.chat.completions.create(options)
     );
 
     const inputTokens = completion.usage.prompt_tokens;
     const outputTokens = completion.usage.completion_tokens;
 
-    const inputPrice = isMini
-      ? model
-        ? FINETUNED_4O_MINI_INPUT_PRICE
-        : DEFAULT_4O_MINI_INPUT_PRICE
-      : model
-      ? FINETUNED_4O_INPUT_PRICE
-      : DEFAULT_4O_INPUT_PRICE;
-
-    const outputPrice = isMini
-      ? model
-        ? FINETUNED_4O_MINI_OUTPUT_PRICE
-        : DEFAULT_4O_MINI_OUTPUT_PRICE
-      : model
-      ? FINETUNED_4O_OUTPUT_PRICE
-      : DEFAULT_4O_OUTPUT_PRICE;
-
-    const unitCost =
-      ((inputTokens / (inputTokens + outputTokens)) * Number(inputPrice) +
-        (outputTokens / (inputTokens + outputTokens)) * Number(outputPrice)) /
-      1000000;
+    const { unitCost, units } = getCompletionCost({
+      inputTokens,
+      outputTokens,
+      modelName: finalModel,
+      divisor: 1000000,
+    });
 
     updateSpend({
       functionName,
+      modelName: finalModel,
       categoryName,
-      modelName: model,
       unitCost,
-      units: inputTokens + outputTokens,
+      units,
       userId,
     });
 
@@ -100,4 +80,4 @@ async function askOpenAi({
   }
 }
 
-export default askOpenAi;
+export default askOpenai;

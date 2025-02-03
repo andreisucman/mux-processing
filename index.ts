@@ -17,6 +17,7 @@ import createHumanEmbedding from "routes/createHumanEmbedding.js";
 import createGroupCollage from "@/routes/createGroupCollage.js";
 import createGridCollage from "@/routes/createGridCollage.js";
 import { client } from "init.js";
+import checkAccess from "./middleware/checkAccess.js";
 
 client.connect();
 
@@ -58,16 +59,16 @@ app.use("/metrics", metrics);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use("/transcribe", transcribe);
+app.use("/transcribe", checkAccess, transcribe);
 
-app.use(timeout("10m"));
+app.use(timeout("5m"));
 
 app.use("/blurVideo", blurVideo);
 app.use("/blurImage", blurImage);
-app.use("/processVideo", processVideo);
-app.use("/createHumanEmbedding", createHumanEmbedding);
-app.use("/createGroupCollage", createGroupCollage);
-app.use("/createGridCollage", createGridCollage);
+app.use("/processVideo", checkAccess, processVideo);
+app.use("/createHumanEmbedding", checkAccess, createHumanEmbedding);
+app.use("/createGroupCollage", checkAccess, createGroupCollage);
+app.use("/createGridCollage", checkAccess, createGridCollage);
 
 app.use(errorHandler);
 

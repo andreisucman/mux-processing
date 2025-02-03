@@ -1,6 +1,6 @@
 import askOpenAi from "@/functions/askOpenAi.js";
 import doWithRetries from "helpers/doWithRetries.js";
-import { MessageType, RoleEnum, RunType } from "types.js";
+import { RunType } from "types.js";
 import httpError from "@/helpers/httpError.js";
 
 type Props = {
@@ -24,15 +24,14 @@ async function askRepeatedly({
     if (!userId) throw httpError("Missing userId");
 
     let result;
-    let conversation: MessageType[] = [
-      { role: "system" as RoleEnum, content: systemContent },
-    ];
+
+    let conversation: any[] = [{ role: "system", content: systemContent }];
 
     for (let i = 0; i < runs.length; i++) {
       conversation.push({
         role: "user",
         content: runs[i].content,
-      } as MessageType);
+      });
 
       result = await doWithRetries(async () =>
         askOpenAi({
@@ -48,7 +47,7 @@ async function askRepeatedly({
       );
 
       conversation.push({
-        role: "assistant" as RoleEnum,
+        role: "assistant",
         content: [
           {
             type: "text",

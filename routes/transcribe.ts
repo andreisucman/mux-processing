@@ -5,7 +5,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { nanoid } from "nanoid";
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Response, NextFunction } from "express";
 import multer from "multer";
 import { upperFirst } from "helpers/utils.js";
 import { __dirname } from "init.js";
@@ -13,6 +13,7 @@ import transcribeAudio from "@/functions/transcribeAudio.js";
 import getAudioDuration from "@/functions/getAudioDuration.js";
 import fromUrlToBuffer from "@/functions/fromUrlToBuffer.js";
 import httpError from "@/helpers/httpError.js";
+import { CustomRequest } from "@/types.js";
 
 const route = Router();
 const upload = multer();
@@ -20,16 +21,8 @@ const upload = multer();
 route.post(
   "/",
   upload.single("file"),
-  async (req: Request, res: Response, next: NextFunction) => {
-    
-    if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
-      res.status(403).json({ message: "Access denied" });
-      return;
-    }
-
-    const userId = req.header("userid");
-
-    if (!userId) {
+  async (req: CustomRequest, res: Response, next: NextFunction) => {
+    if (!req.userId) {
       res.status(400).json({ message: "Bad request" });
       return;
     }
@@ -54,7 +47,7 @@ route.post(
         );
 
         if (!validOrigin) throw httpError(`Invalid audio origin: ${audioFile}`);
-        
+
         audioBuffer = await fromUrlToBuffer(audioFile);
       }
 
@@ -70,8 +63,8 @@ route.post(
       const transcription = await transcribeAudio({
         duration,
         readStream,
-        userId,
-        categoryName: req.body.categoryName
+        userId: req.userId,
+        categoryName: req.body.categoryName,
       });
 
       await fs.promises.unlink(tempFilePath);

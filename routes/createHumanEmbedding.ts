@@ -13,11 +13,6 @@ const route = express.Router();
 route.post(
   "/",
   async (req: CustomRequest, res: Response, next: NextFunction) => {
-    if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
-      res.status(403).json({ message: "Access denied" });
-      return;
-    }
-
     const { image } = req.body;
 
     if (!image) {

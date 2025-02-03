@@ -14,11 +14,6 @@ type Props = { images: string[]; collageSize?: number };
 route.post(
   "/",
   async (req: CustomRequest, res: Response, next: NextFunction) => {
-    // if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
-    //   res.status(403).json({ message: "Access denied" });
-    //   return;
-    // }
-
     const { images, collageSize = 1120 }: Props = req.body;
 
     if (

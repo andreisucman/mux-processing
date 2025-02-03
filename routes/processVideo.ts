@@ -3,7 +3,7 @@ dotenv.config();
 
 import fs from "fs";
 import path from "path";
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import resizeVideoBuffer from "functions/resizeVideoBuffer.js";
 import transcribeVideoBuffer from "functions/transcribeVideoBuffer.js";
 import getVideoDuration from "@/functions/getVideoDuration.js";
@@ -11,18 +11,12 @@ import extractFrames from "functions/extractFrames.js";
 import doWithRetries from "helpers/doWithRetries.js";
 import uploadToSpaces from "functions/uploadToSpaces.js";
 import httpError from "@/helpers/httpError.js";
+import { CustomRequest } from "@/types.js";
 
 const route = Router();
 
-route.post("/", async (req: Request, res: Response) => {
-  if (req.header("authorization") !== process.env.PROCESSING_SECRET) {
-    res.status(403).json({ message: "Access denied" });
-    return;
-  }
-
-  const userId = req.header("userid");
-
-  if (!userId) {
+route.post("/", async (req: CustomRequest, res: Response) => {
+  if (!req.userId) {
     res.status(400).json({ message: "Bad request" });
     return;
   }
@@ -58,7 +52,7 @@ route.post("/", async (req: Request, res: Response) => {
     const transcription = await transcribeVideoBuffer({
       videoBuffer: resizedBuffer,
       duration,
-      userId,
+      userId: req.userId,
       categoryName: "proof",
     });
 
