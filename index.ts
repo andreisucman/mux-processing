@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import timeout from "connect-timeout";
 import rateLimit from "express-rate-limit";
 import setHeaders from "middleware/setHeaders.js";
@@ -53,6 +54,7 @@ app.use(metricCapturer);
 app.set("trust proxy", 1);
 
 app.use("*", setHeaders);
+app.use(cookieParser());
 
 app.use("/", rootRoute);
 app.use("/metrics", metrics);

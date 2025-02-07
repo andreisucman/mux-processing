@@ -26,8 +26,6 @@ route.post(
       return;
     }
 
-    console.log("images", images, "collageSize", collageSize);
-
     try {
       const imagePromises = images.map((image) =>
         doWithRetries(async () => fetch(image))
