@@ -54,15 +54,21 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const { resizedBuffer, targetHeight, targetWidth, frameRate = 30 } =
-      await resizeVideoBuffer(buffer);
+    const {
+      duration,
+      resizedBuffer,
+      targetHeight,
+      targetWidth,
+      frameRate = 30,
+    } = await resizeVideoBuffer(buffer);
 
     fs.writeFileSync(videoPath, resizedBuffer);
 
     /* check if the result already exists */
+    const timestamps = [Number(duration) * 0.25];
     const screenshotsFolder = await extractFrames({
       input: videoPath,
-      timestamps: ["25%"],
+      timestamps,
       width: targetWidth,
       height: targetHeight,
     });
@@ -139,8 +145,8 @@ route.post("/", async (req: CustomRequest, res: Response) => {
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          // "libopenh264",
-          "libx264", // or libopenh264
+          "libopenh264",
+          // "libx264", // or libopenh264
           "-preset",
           "fast",
           "-threads",

@@ -1,24 +1,24 @@
 import crypto from "crypto";
 import httpError from "@/helpers/httpError.js";
+import fs from "fs/promises";
 
 export default async function createHashKey(url: string) {
   try {
-    let base64String = "";
+    let buffer: Buffer;
 
     if (url.startsWith("http")) {
       const res = await fetch(url);
-      if (!res.ok) {
+      if (!res.ok)
         throw new Error(
           `Failed to fetch ${url}: ${res.status} ${res.statusText}`
         );
-      }
       const arrayBuffer = await res.arrayBuffer();
-      base64String = Buffer.from(arrayBuffer).toString("base64");
+      buffer = Buffer.from(arrayBuffer);
     } else {
-      base64String = url;
+      buffer = await fs.readFile(url);
     }
 
-    return crypto.createHash("sha256").update(base64String).digest("hex");
+    return crypto.createHash("sha256").update(buffer).digest("hex");
   } catch (err) {
     throw httpError(`Hashing error: ${err.message}`);
   }

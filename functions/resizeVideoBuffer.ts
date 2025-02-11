@@ -25,7 +25,7 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
       throw new Error("Invalid file type");
     }
 
-    const metadata = await doWithRetries(
+    const metadata: ffmpeg.FfprobeData = await doWithRetries(
       () =>
         new Promise((resolve, reject) => {
           ffmpeg.ffprobe(tempFilePath, (err, metadata) => {
@@ -85,6 +85,7 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
       targetHeight,
       targetWidth,
       frameRate: videoStream.r_frame_rate,
+      duration: metadata.format.duration,
     };
   } catch (err) {
     throw httpError(err);
