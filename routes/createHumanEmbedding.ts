@@ -35,7 +35,12 @@ route.post(
 
       const result = await detectWithHuman(orientedBuffer);
 
-      if (!result || !result.face || result.face.length === 0) {
+      const personNotFound =
+        !result ||
+        (!result.face && !result.body) ||
+        (result.face.length === 0 && result.body.length === 0);
+
+      if (personNotFound) {
         res.status(400).json({ error: "person not found" });
         return;
       }

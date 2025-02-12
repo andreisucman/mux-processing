@@ -32,8 +32,6 @@ route.post(
     let tempDir;
 
     try {
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "blur-image-"));
-
       const hash = await createHashKey(url);
 
       const existingResult = await getExistingResults({
@@ -46,7 +44,9 @@ route.post(
         return;
       }
 
-      const tempPath = fs.mkdtempSync(path.join(tempDir, nanoid()) + ".png");
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "blur-image-"));
+
+      const tempPath = path.join(tempDir, nanoid() + ".png");
 
       const response = await doWithRetries(async () => fetch(url));
 
