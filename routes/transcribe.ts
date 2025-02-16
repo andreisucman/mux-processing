@@ -22,11 +22,6 @@ route.post(
   "/",
   upload.single("file"),
   async (req: CustomRequest, res: Response, next: NextFunction) => {
-    if (!req.userId) {
-      res.status(400).json({ message: "Bad request" });
-      return;
-    }
-
     const tempFilePath = path.join(os.tmpdir(), `temp_file_${nanoid()}.wav`);
 
     try {
@@ -53,8 +48,10 @@ route.post(
 
       const duration = (await getAudioDuration(audioBuffer)) as number | null;
 
-      if (!duration || duration > 300)
-        throw httpError(`Duration is too long: ${duration}`);
+      if (!duration)
+        throw httpError(`Can't determine the duration of the audio.`);
+
+      if (duration > 300) throw httpError(`Duration is too long: ${duration}`);
 
       fs.writeFileSync(tempFilePath, audioBuffer);
 

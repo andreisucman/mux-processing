@@ -27,8 +27,6 @@ async function checkAccess(
   }
 
   if (rejectUnauthorized) {
-    if (!csrfSecret || !csrfTokenFromClient) return;
-
     const csrfVerificationPassed = csrfProtection.verify(
       csrfSecret,
       csrfTokenFromClient as string
