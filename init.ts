@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import path from "path";
 import { fileURLToPath } from "url";
-import { BackendEnum, Human } from "@vladmandic/human";
+import { Human } from "@vladmandic/human";
 import { MongoClient } from "mongodb";
 import { S3Client } from "@aws-sdk/client-s3";
 import * as promClient from "prom-client";

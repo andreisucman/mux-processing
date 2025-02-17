@@ -35,27 +35,14 @@ route.post(
 
       const result = await detectWithHuman(orientedBuffer);
 
-      const personNotFound =
-        !result ||
-        (!result.face && !result.body) ||
-        (result.face.length === 0 && result.body.length === 0);
+      const face = result.face[0];
 
-      if (personNotFound) {
-        res.status(400).json({ error: "person not found" });
-        return;
-      }
-
-      if (result.face.length > 1) {
-        res.status(400).json({ error: "more than one person" });
-        return;
-      }
-
-      if (result.face[0].age <= 17) {
+      if (face && face.age <= 17) {
         res.status(400).json({ error: "minor" });
         return;
       }
 
-      res.status(200).json({ message: result.face[0].embedding });
+      res.status(200).json({ message: face ? face.embedding : null });
     } catch (err) {
       next(err);
     }

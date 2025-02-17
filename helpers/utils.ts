@@ -175,3 +175,8 @@ function euclideanDistance(p1: number[], p2: number[]) {
   const dy = p1[1] - p2[1];
   return Math.sqrt(dx * dx + dy * dy);
 }
+
+export function setToUtcMidnight(date: Date) {
+  return new Date(date.setUTCHours(0, 0, 0, 0));
+}
+
