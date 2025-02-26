@@ -39,12 +39,12 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       await resizeVideoBuffer(buffer);
 
     const duration = (await getVideoDuration(resizedBuffer)) as number | null;
-    const durationIsValid = duration >= 5 && duration <= 15;
+    const durationIsValid = duration >= 5 && duration <= 20;
 
     if (!durationIsValid) {
       res.status(400).json({
         status: false,
-        error: "Video must be between 5 and 15 seconds in length.",
+        error: "Video must be between 5 and 20 seconds in length.",
       });
       return;
     }

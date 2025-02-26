@@ -16,6 +16,7 @@ import doWithRetries from "helpers/doWithRetries.js";
 import getExistingResults from "functions/getExistingResult.js";
 import createHashKey from "functions/createHashKey.js";
 import httpError from "@/helpers/httpError.js";
+import updateAnalytics from "@/functions/updateAnalytics.js";
 
 const route = express.Router();
 
@@ -63,15 +64,26 @@ route.post(
       let resultBuffer;
 
       if (result && result.face.length > 0) {
+        const incrementPayload: { [key: string]: number } = {
+          "overview.usage.blur.total": 1,
+        };
+
         if (blurType === "face") {
           resultBuffer = await processFace(result.face[0], orientedBuffer);
+          incrementPayload["overview.usage.blur.blurType.face"] = 1;
         } else {
           resultBuffer = await processEye(
             result.face[0],
             tempPath,
             orientedBuffer
           );
+          incrementPayload["overview.usage.blur.blurType.eyes"] = 1;
         }
+
+        updateAnalytics({
+          userId: req.userId,
+          incrementPayload,
+        });
       } else {
         resultBuffer = orientedBuffer;
       }

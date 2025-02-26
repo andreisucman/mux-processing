@@ -26,7 +26,7 @@ export default async function processEye(
 
     const confidenceThreshold = 0.5;
 
-    if (yaw < 0.5) {
+    if (yaw < 0.35) {
       const rightIrisLandmarks = detection.annotations.rightEyeIris;
       if (
         areLandmarksReliable(rightIrisLandmarks) &&
@@ -38,7 +38,7 @@ export default async function processEye(
         eyeData.rightEyeRadius = rightEyeRadius;
       }
     }
-    if (yaw > -0.5) {
+    if (yaw > -0.35) {
       const leftIrisLandmarks = detection.annotations.leftEyeIris;
       if (
         areLandmarksReliable(leftIrisLandmarks) &&
