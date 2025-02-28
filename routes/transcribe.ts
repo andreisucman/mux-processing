@@ -51,7 +51,7 @@ route.post(
       if (!duration)
         throw httpError(`Can't determine the duration of the audio.`);
 
-      if (duration > 300) throw httpError(`Duration is too long: ${duration}`);
+      if (duration > 302) throw httpError(`Duration is too long: ${duration}`);
 
       fs.writeFileSync(tempFilePath, audioBuffer);
 

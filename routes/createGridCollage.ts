@@ -16,12 +16,7 @@ route.post(
   async (req: CustomRequest, res: Response, next: NextFunction) => {
     const { images, collageSize = 1120 }: Props = req.body;
 
-    if (
-      !images ||
-      images.length > 3 ||
-      images.length === 0 ||
-      collageSize > 2048
-    ) {
+    if (!images || images.length === 0 || collageSize > 2048) {
       res.status(400).json({ error: "Bad request" });
       return;
     }
