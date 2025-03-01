@@ -25,6 +25,7 @@ export default async function updateSpend({
   const totalCost = units * unitCost;
 
   const incrementPayload = {
+    "overview.accounting.totalCost": totalCost,
     "accounting.totalCost": totalCost,
     "accounting.totalUnits": units,
     [`accounting.units.functions.${functionName}`]: units,
