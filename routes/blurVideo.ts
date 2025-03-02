@@ -139,13 +139,15 @@ route.post("/", async (req: CustomRequest, res: Response) => {
       );
     }
 
+    const codec = process.env.ENV === "dev" ? "libopenh264" : "libx264";
+
     await new Promise((resolve, reject) => {
       ffmpeg(path.join(processedFramesDir, "frame-%04d.png"))
         .inputOptions([`-framerate ${frameRate}`, "-start_number 1"])
         .input(videoPath)
         .outputOptions([
           "-c:v",
-          "libopenh264",
+          codec,
           // "libx264", // or libopenh264
           "-preset",
           "fast",

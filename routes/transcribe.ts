@@ -70,7 +70,7 @@ route.post(
         .toLowerCase()
         .split(".")
         .map((part) => upperFirst(part.trim()))
-        .join(".");
+        .join(". ");
 
       res.status(200).json({ message: formatted });
     } catch (err) {

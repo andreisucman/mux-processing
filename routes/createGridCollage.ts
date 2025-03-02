@@ -22,9 +22,9 @@ route.post(
     }
 
     try {
-      const imagePromises = images.map((image) =>
-        doWithRetries(async () => fetch(image))
-      );
+      const imagePromises = images
+        .filter((i) => i.length > 0)
+        .map((image) => doWithRetries(async () => fetch(image)));
 
       const imageResponses = await Promise.all(imagePromises);
 

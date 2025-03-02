@@ -24,8 +24,11 @@ route.post(
     try {
       const bufferGroups = [];
 
-      for (const group of images) {
-        const promises = group.map((image) =>
+      const filteredGroups = images.filter((i) => i.length > 0);
+
+      for (const group of filteredGroups) {
+        const filteredGroup = group.filter((i) => i.length > 0);
+        const promises = filteredGroup.map((image) =>
           doWithRetries(async () => fetch(image))
         );
         const responses = await Promise.all(promises);
