@@ -69,7 +69,7 @@ route.post(
       const formatted = transcription
         .toLowerCase()
         .split(".")
-        .map((part) => upperFirst(part))
+        .map((part) => upperFirst(part.trim()))
         .join(".");
 
       res.status(200).json({ message: formatted });

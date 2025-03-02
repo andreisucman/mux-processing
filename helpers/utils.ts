@@ -1,8 +1,5 @@
-import fs from "fs";
-import crypto from "crypto";
 import { Point } from "@vladmandic/human";
 import { TranslatedPoint } from "types.js";
-import doWithRetries from "helpers/doWithRetries.js";
 
 export function delayExecution(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
