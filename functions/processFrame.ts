@@ -77,8 +77,8 @@ export async function processFrame({
       } else {
         resultBuffer = await processEye(
           result.face[0],
-          outputFramePath,
-          orientedBuffer
+          orientedBuffer,
+          outputFramePath
         );
       }
       fs.writeFileSync(outputFramePath, resultBuffer);

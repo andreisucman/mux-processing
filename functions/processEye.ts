@@ -1,18 +1,18 @@
-import fs from "fs";
 import blurEyes from "functions/blurEyes.js";
 import {
   areLandmarksReliable,
   computeEyeCenter,
   computeEyeRadius,
 } from "helpers/utils.js";
+import fs from "fs";
 import { FaceResult } from "@vladmandic/human";
 import { EyeDataType } from "types.js";
 import httpError from "@/helpers/httpError.js";
 
 export default async function processEye(
   detection: FaceResult,
-  outputFramePath: string,
-  orientedBuffer: Buffer
+  orientedBuffer: Buffer,
+  outputFramePath?: string
 ) {
   try {
     const yaw = detection.rotation.angle.yaw;
@@ -26,7 +26,7 @@ export default async function processEye(
 
     const confidenceThreshold = 0.5;
 
-    if (yaw < 0.35) {
+    if (yaw < 0.5) {
       const rightIrisLandmarks = detection.annotations.rightEyeIris;
       if (
         areLandmarksReliable(rightIrisLandmarks) &&
@@ -38,7 +38,7 @@ export default async function processEye(
         eyeData.rightEyeRadius = rightEyeRadius;
       }
     }
-    if (yaw > -0.35) {
+    if (yaw > -0.5) {
       const leftIrisLandmarks = detection.annotations.leftEyeIris;
       if (
         areLandmarksReliable(leftIrisLandmarks) &&
@@ -52,8 +52,8 @@ export default async function processEye(
     }
 
     if (!eyeData.leftEyeCenter && !eyeData.rightEyeCenter) {
-      fs.writeFileSync(outputFramePath, orientedBuffer);
-      return;
+      if (outputFramePath) fs.writeFileSync(outputFramePath, orientedBuffer);
+      return orientedBuffer;
     }
 
     return await blurEyes(orientedBuffer, eyeData, "png");

@@ -1,9 +1,5 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import fs from "fs";
-import path from "path";
-import os from "os";
-import { nanoid } from "nanoid";
 import express, { Response, NextFunction } from "express";
 import sharp from "sharp";
 import { CustomRequest } from "types.js";
@@ -30,8 +26,6 @@ route.post(
       return;
     }
 
-    let tempDir;
-
     try {
       const hash = await createHashKey(url);
 
@@ -44,10 +38,6 @@ route.post(
         res.status(200).json({ message: existingResult });
         return;
       }
-
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "blur-image-"));
-
-      const tempPath = path.join(tempDir, nanoid() + ".png");
 
       const response = await doWithRetries(async () => fetch(url));
 
@@ -72,11 +62,7 @@ route.post(
           resultBuffer = await processFace(result.face[0], orientedBuffer);
           incrementPayload["overview.usage.blur.blurType.face"] = 1;
         } else {
-          resultBuffer = await processEye(
-            result.face[0],
-            tempPath,
-            orientedBuffer
-          );
+          resultBuffer = await processEye(result.face[0], orientedBuffer);
           incrementPayload["overview.usage.blur.blurType.eyes"] = 1;
         }
 
@@ -107,10 +93,6 @@ route.post(
 
       res.status(200).json({ message: { url: resultUrl } });
     } catch (err) {
-      if (fs.existsSync(tempDir)) {
-        fs.rmSync(tempDir, { recursive: true, force: true });
-      }
-
       next(err);
     }
   }
