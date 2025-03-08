@@ -40,12 +40,12 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     const duration = (await getVideoDuration(resizedBuffer)) as number | null;
     const durationIsValid =
-      Math.round(duration) >= 3 && Math.round(duration) <= 21;
+      Math.round(duration) >= 10 && Math.floor(duration) < 31;
 
     if (!durationIsValid) {
       res.status(400).json({
         status: false,
-        error: "Video must be between 3 and 20 seconds in length.",
+        error: "Video must be between 10 and 30 seconds in length.",
       });
       return;
     }
@@ -59,8 +59,10 @@ route.post("/", async (req: CustomRequest, res: Response) => {
 
     const timestamps = [];
     const timestampSpace = Math.floor(100 / duration);
+    const start = Math.ceil(duration * 0.2);
+    const end = Math.floor(duration * 0.8);
 
-    for (let i = 1; i < Math.floor(duration) + 1; i++) {
+    for (let i = start; i < end; i++) {
       timestamps.push(`${i * timestampSpace}%`);
     }
 
