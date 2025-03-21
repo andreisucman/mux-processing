@@ -65,7 +65,7 @@ export default async function resizeVideoBuffer(inputBuffer: Buffer) {
           ffmpeg(tempFilePath)
             .outputOptions([
               `-vf scale=${adjustedWidth}:${adjustedHeight}`,
-              "-preset veryfast",
+              // "-preset veryfast",
             ])
             .on("end", resolve)
             .on("error", (err) => {
