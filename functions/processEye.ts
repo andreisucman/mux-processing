@@ -1,4 +1,4 @@
-import blurEyes from "functions/blurEyes.js";
+import blurEyes from "@/functions/blurEyes.js";
 import {
   areLandmarksReliable,
   computeEyeCenter,
@@ -24,26 +24,20 @@ export default async function processEye(
       rightEyeRadius: null,
     };
 
-    const confidenceThreshold = 0.5;
+    const confidenceThreshold = 0.75;
 
-    if (yaw < 0.35) {
+    if (yaw < 0.4) {
       const rightIrisLandmarks = detection.annotations.rightEyeIris;
-      if (
-        areLandmarksReliable(rightIrisLandmarks) &&
-        detection.score > confidenceThreshold
-      ) {
+      if (areLandmarksReliable(rightIrisLandmarks)) {
         const rightEyeCenter = computeEyeCenter(rightIrisLandmarks);
         const rightEyeRadius = computeEyeRadius(rightIrisLandmarks);
         eyeData.rightEyeCenter = rightEyeCenter;
         eyeData.rightEyeRadius = rightEyeRadius;
       }
     }
-    if (yaw > -0.35) {
+    if (yaw > -0.4) {
       const leftIrisLandmarks = detection.annotations.leftEyeIris;
-      if (
-        areLandmarksReliable(leftIrisLandmarks) &&
-        detection.score > confidenceThreshold
-      ) {
+      if (areLandmarksReliable(leftIrisLandmarks)) {
         const leftEyeCenter = computeEyeCenter(leftIrisLandmarks);
         const leftEyeRadius = computeEyeRadius(leftIrisLandmarks);
         eyeData.leftEyeCenter = leftEyeCenter;
@@ -51,7 +45,10 @@ export default async function processEye(
       }
     }
 
-    if (!eyeData.leftEyeCenter && !eyeData.rightEyeCenter) {
+    if (
+      (!eyeData.leftEyeCenter && !eyeData.rightEyeCenter) ||
+      detection.faceScore < confidenceThreshold
+    ) {
       if (outputFramePath) fs.writeFileSync(outputFramePath, orientedBuffer);
       return orientedBuffer;
     }
