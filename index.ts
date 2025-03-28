@@ -17,6 +17,7 @@ import errorHandler from "middleware/errorHandler.js";
 import createHumanEmbedding from "routes/createHumanEmbedding.js";
 import createGroupCollage from "@/routes/createGroupCollage.js";
 import createGridCollage from "@/routes/createGridCollage.js";
+import blurImageManually from "@/routes/blurImageManually.js";
 import { client } from "init.js";
 import checkAccess from "./middleware/checkAccess.js";
 
@@ -66,6 +67,7 @@ app.use("/transcribe", checkAccess, transcribe);
 app.use(timeout("5m"));
 
 app.use("/blurImage", blurImage);
+app.use("/blurImageManually", blurImageManually);
 app.use("/createHumanEmbedding", createHumanEmbedding);
 app.use("/createGroupCollage", createGroupCollage);
 app.use("/createGridCollage", createGridCollage);
