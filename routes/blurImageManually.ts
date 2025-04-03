@@ -2,8 +2,9 @@ import "dotenv/config";
 import express, { Response, NextFunction } from "express";
 import sharp from "sharp";
 import { CustomRequest } from "@/types.js";
-import { __dirname } from "@/init.js";
+import { __dirname, adminDb } from "@/init.js";
 import uploadToSpaces from "@/functions/uploadToSpaces.js";
+import doWithRetries from "@/helpers/doWithRetries.js";
 
 const route = express.Router();
 
@@ -64,6 +65,12 @@ route.post(
         buffer: finalImage,
         mimeType: "image/webp",
       });
+
+      doWithRetries(() =>
+        adminDb
+          .collection("BlurDataset")
+          .insertOne({ url, blurDots, numberOfDots: blurDots.length })
+      );
 
       res.json({ url: resultUrl });
     } catch (err) {

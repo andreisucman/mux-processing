@@ -58,12 +58,12 @@ route.post("/", async (req: CustomRequest, res: Response) => {
     });
 
     const timestamps = [];
-    const timestampSpace = Math.floor(100 / duration);
-    const start = Math.ceil(duration * 0.2);
-    const end = Math.floor(duration * 0.8);
+    const start = Math.ceil(duration * 0.1);
+    const end = Math.floor(duration * 0.9);
+    const timestampSpace = Math.floor(100 / (end - start));
 
     for (let i = start; i < end; i++) {
-      timestamps.push(`${i * timestampSpace}%`);
+      if (i * timestampSpace <= 100) timestamps.push(`${i * timestampSpace}%`);
     }
 
     urlsFolder = await extractFrames({

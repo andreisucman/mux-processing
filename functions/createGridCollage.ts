@@ -11,7 +11,7 @@ export default async function createGridCollage({
   collageSize,
 }: Props): Promise<Buffer> {
   const gridSize = Math.ceil(Math.sqrt(imageBuffers.length));
-  const cellSize = Math.max(256, collageSize / gridSize);
+  const cellSize = Math.round(Math.max(256, collageSize / gridSize));
 
   try {
     const resizedImages = imageBuffers.map((buffer) =>
