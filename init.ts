@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import path from "path";
 import { fileURLToPath } from "url";
-import { Human } from "@vladmandic/human";
 import { MongoClient } from "mongodb";
 import { S3Client } from "@aws-sdk/client-s3";
 import * as promClient from "prom-client";
@@ -45,19 +44,4 @@ const myConfig = {
   gesture: { enabled: false },
 };
 
-const human = new Human(myConfig);
-
-await human.tf.ready();
-
-await human.load();
-
-export {
-  human,
-  client,
-  db,
-  adminDb,
-  s3Client,
-  openai,
-  __dirname,
-  promClientRegister,
-};
+export { client, db, adminDb, s3Client, openai, __dirname, promClientRegister };

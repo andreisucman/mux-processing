@@ -6,11 +6,8 @@ type Props = {
   collageSize: number;
 };
 
-export default async function createGridCollage({
-  imageBuffers,
-  collageSize,
-}: Props): Promise<Buffer> {
-  const gridSize = Math.ceil(Math.sqrt(imageBuffers.length));
+export default async function createGridCollage({ imageBuffers, collageSize }: Props): Promise<Buffer> {
+  const gridSize = Math.round(Math.ceil(Math.sqrt(imageBuffers.length)));
   const cellSize = Math.round(Math.max(256, collageSize / gridSize));
 
   try {
@@ -62,10 +59,7 @@ export default async function createGridCollage({
       });
     }
 
-    const finalImage = await combinedImage
-      .composite(composites)
-      .toFormat("webp")
-      .toBuffer();
+    const finalImage = await combinedImage.composite(composites).toFormat("webp").toBuffer();
 
     return finalImage;
   } catch (error) {

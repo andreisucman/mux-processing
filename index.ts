@@ -5,20 +5,18 @@ import cookieParser from "cookie-parser";
 import timeout from "connect-timeout";
 import rateLimit from "express-rate-limit";
 import setHeaders from "middleware/setHeaders.js";
-import processVideo from "@/routes/processVideo.js";
-import blurVideo from "routes/blurVideo.js";
-import blurImage from "routes/blurImage.js";
 import transcribe from "routes/transcribe.js";
 import metricCapturer from "middleware/metricCapturer.js";
 import metrics from "routes/metrics.js";
 import rootRoute from "routes/rootRoute.js";
 import logCapturer from "middleware/logCapturer.js";
 import errorHandler from "middleware/errorHandler.js";
-import createHumanEmbedding from "routes/createHumanEmbedding.js";
+import processVideo from "@/routes/processVideo.js";
 import createGroupCollage from "@/routes/createGroupCollage.js";
 import createGridCollage from "@/routes/createGridCollage.js";
 import blurImageManually from "@/routes/blurImageManually.js";
 import { client } from "init.js";
+import createImageEmbedding from "@/routes/createImageEmbedding.js"
 import checkAccess from "./middleware/checkAccess.js";
 
 client.connect();
@@ -28,13 +26,7 @@ const app = express();
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(","),
   methods: ["GET", "POST", "OPTIONS", "HEAD"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "UserId",
-    "X-CSRF-Token",
-    "Access-Control-Allow-Credentials",
-  ],
+  allowedHeaders: ["Content-Type", "Authorization", "UserId", "X-CSRF-Token", "Access-Control-Allow-Credentials"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -66,13 +58,11 @@ app.use("/transcribe", checkAccess, transcribe);
 
 app.use(timeout("5m"));
 
-app.use("/blurImage", blurImage);
 app.use("/blurImageManually", blurImageManually);
-app.use("/createHumanEmbedding", createHumanEmbedding);
 app.use("/createGroupCollage", createGroupCollage);
 app.use("/createGridCollage", createGridCollage);
-app.use("/blurVideo", checkAccess, blurVideo);
 app.use("/processVideo", checkAccess, processVideo);
+app.use("/createImageEmbedding", createImageEmbedding);
 
 app.use(errorHandler);
 

@@ -1,4 +1,3 @@
-import { Point } from "@vladmandic/human";
 import { TranslatedPoint } from "types.js";
 
 export function delayExecution(ms: number) {
@@ -11,11 +10,7 @@ export function upperFirst(string: string) {
   return string[0].toUpperCase() + string.slice(1);
 }
 
-export function getExponentialBackoffDelay(
-  attempt: number,
-  baseDelay = 5000,
-  maxDelay = 24000
-) {
+export function getExponentialBackoffDelay(attempt: number, baseDelay = 5000, maxDelay = 24000) {
   const rawDelay = baseDelay * Math.pow(2, attempt);
   const jitter = Math.random() * baseDelay - baseDelay / 2; // random value between -0.5*baseDelay and 0.5*baseDelay
   return Math.min(rawDelay + jitter, maxDelay);
@@ -44,15 +39,10 @@ export function mimeToExtension(mimeType: string) {
 }
 
 export function timeout(ms: number) {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Timeout")), ms)
-  );
+  return new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms));
 }
 
-export function calculateTargetDimensions(
-  originalWidth: number,
-  originalHeight: number
-) {
+export function calculateTargetDimensions(originalWidth: number, originalHeight: number) {
   let targetWidth, targetHeight;
 
   if (originalWidth > originalHeight) {
@@ -104,11 +94,8 @@ function normalizePoints(points: TranslatedPoint[]) {
 }
 
 function scaleToAverageRadius(points: TranslatedPoint[]) {
-  const distances = points.map((point) =>
-    Math.sqrt(point.x ** 2 + point.y ** 2)
-  );
-  const averageDistance =
-    distances.reduce((acc, distance) => acc + distance, 0) / distances.length;
+  const distances = points.map((point) => Math.sqrt(point.x ** 2 + point.y ** 2));
+  const averageDistance = distances.reduce((acc, distance) => acc + distance, 0) / distances.length;
 
   return points.map((point) => {
     const scale = averageDistance / Math.sqrt(point.x ** 2 + point.y ** 2);
@@ -131,20 +118,6 @@ function smoothPoints(points: TranslatedPoint[], iterations = 1) {
     });
   }
   return points;
-}
-
-export function roundLandmarks(landmarks: Point[]) {
-  const points = landmarks.map((point) => ({ x: point[0], y: point[1] }));
-  const normalizedPoints = normalizePoints(points);
-  const scaledPoints = scaleToAverageRadius(normalizedPoints);
-  const smoothedPoints = smoothPoints(scaledPoints, 2);
-  const centroid = calculateCentroid(points);
-  const finalPoints = smoothedPoints.map((point: { x: number; y: number }) => ({
-    x: point.x + centroid.x,
-    y: point.y + centroid.y,
-  }));
-
-  return finalPoints;
 }
 
 export function areLandmarksReliable(landmarks: number[][]): boolean {
@@ -176,4 +149,3 @@ function euclideanDistance(p1: number[], p2: number[]) {
 export function setToUtcMidnight(date: Date) {
   return new Date(date.setUTCHours(0, 0, 0, 0));
 }
-
