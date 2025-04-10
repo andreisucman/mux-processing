@@ -12,7 +12,6 @@ import rootRoute from "routes/rootRoute.js";
 import logCapturer from "middleware/logCapturer.js";
 import errorHandler from "middleware/errorHandler.js";
 import processVideo from "@/routes/processVideo.js";
-import createGroupCollage from "@/routes/createGroupCollage.js";
 import createGridCollage from "@/routes/createGridCollage.js";
 import blurImageManually from "@/routes/blurImageManually.js";
 import { client } from "init.js";
@@ -59,7 +58,6 @@ app.use("/transcribe", checkAccess, transcribe);
 app.use(timeout("5m"));
 
 app.use("/blurImageManually", blurImageManually);
-app.use("/createGroupCollage", createGroupCollage);
 app.use("/createGridCollage", createGridCollage);
 app.use("/processVideo", checkAccess, processVideo);
 app.use("/createImageEmbedding", createImageEmbedding);

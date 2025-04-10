@@ -4,18 +4,12 @@ import httpError from "@/helpers/httpError.js";
 
 type GetExistingResultsProps = {
   hash: string;
-  blurType: string;
 };
 
-export default async function getExistingResult({
-  blurType,
-  hash,
-}: GetExistingResultsProps) {
+export default async function getExistingResult({ hash }: GetExistingResultsProps) {
   try {
     const resultRecord = await doWithRetries(async () =>
-      db
-        .collection("BlurProcessingStatus")
-        .findOne({ hash, blurType }, { projection: { url: 1, thumbnail: 1 } })
+      db.collection("BlurProcessingStatus").findOne({ hash }, { projection: { url: 1 } })
     );
 
     return resultRecord;

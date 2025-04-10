@@ -22,9 +22,8 @@ WORKDIR /usr/src/app
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build --chown=node:node /usr/src/app/dist ./dist
-COPY --from=build /usr/src/app/models ./models
-COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
 COPY --from=build --chown=node:node /usr/src/app/package*.json ./
+COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
 
 EXPOSE 3002
 
