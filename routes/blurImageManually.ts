@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { Response, NextFunction } from "express";
 import sharp from "sharp";
 import { CustomRequest } from "@/types.js";
-import { __dirname, adminDb } from "@/init.js";
+import { __dirname, adminDb, db } from "@/init.js";
 import uploadToSpaces from "@/functions/uploadToSpaces.js";
 import doWithRetries from "@/helpers/doWithRetries.js";
 import createHashKey from "@/functions/createHashKey.js";
@@ -71,6 +71,15 @@ route.post("/", async (req: CustomRequest, res: Response, next: NextFunction) =>
     });
 
     doWithRetries(() => adminDb.collection("BlurDataset").insertOne({ url, blurDots, numberOfDots: blurDots.length }));
+
+    const toInsert = {
+      updatedAt: new Date(),
+      isRunning: false,
+      hash,
+      url: resultUrl,
+    };
+
+    doWithRetries(async () => db.collection("BlurProcessingStatus").insertOne(toInsert));
 
     res.json({ message: resultUrl });
   } catch (err) {
