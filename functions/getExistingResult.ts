@@ -12,7 +12,7 @@ export default async function getExistingResult({ hash }: GetExistingResultsProp
       db.collection("BlurProcessingStatus").findOne({ hash }, { projection: { url: 1 } })
     );
 
-    return resultRecord;
+    return resultRecord?.url;
   } catch (err) {
     throw httpError(err);
   }
