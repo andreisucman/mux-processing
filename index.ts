@@ -15,12 +15,15 @@ import processVideo from "@/routes/processVideo.js";
 import createGridCollage from "@/routes/createGridCollage.js";
 import blurImageManually from "@/routes/blurImageManually.js";
 import { client } from "init.js";
-import createImageEmbedding from "@/routes/createImageEmbedding.js"
+import createImageEmbedding from "@/routes/createImageEmbedding.js";
 import checkAccess from "./middleware/checkAccess.js";
 
 client.connect();
 
 const app = express();
+app.set("trust proxy", 1);
+app.use(logCapturer);
+app.use(metricCapturer);
 
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(","),
@@ -40,10 +43,6 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(logCapturer);
-app.use(metricCapturer);
-
-app.set("trust proxy", 1);
 
 app.use("*", setHeaders);
 app.use(cookieParser());

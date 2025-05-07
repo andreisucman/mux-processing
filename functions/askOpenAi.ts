@@ -32,11 +32,7 @@ async function askOpenai({
   responseFormat,
   isJson = true,
 }: AskOpenaiProps) {
-  const finalModel = model
-    ? model
-    : isMini
-    ? process.env.GPT_4O_MINI
-    : process.env.GPT_4O;
+  const finalModel = model ? model : isMini ? process.env.GPT_4O_MINI : process.env.GPT_4O;
 
   try {
     const options: ChatCompletionCreateParams = {
@@ -49,9 +45,7 @@ async function askOpenai({
     if (isJson) options.response_format = { type: "json_object" };
     if (responseFormat) options.response_format = responseFormat;
 
-    const completion = await doWithRetries(async () =>
-      openai.chat.completions.create(options)
-    );
+    const completion = await doWithRetries(async () => openai.chat.completions.create(options));
 
     const inputTokens = completion.usage.prompt_tokens;
     const outputTokens = completion.usage.completion_tokens;
@@ -70,11 +64,10 @@ async function askOpenai({
       unitCost,
       units,
       userId,
+      userType: "user",
     });
 
-    return isJson
-      ? JSON.parse(completion.choices[0].message.content)
-      : completion.choices[0].message.content;
+    return isJson ? JSON.parse(completion.choices[0].message.content) : completion.choices[0].message.content;
   } catch (err) {
     throw httpError(err);
   }

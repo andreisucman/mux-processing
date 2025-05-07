@@ -14,12 +14,7 @@ type Props = {
   categoryName: string;
 };
 
-export default async function transcribeAudio({
-  duration,
-  userId,
-  readStream,
-  categoryName,
-}: Props) {
+export default async function transcribeAudio({ duration, userId, readStream, categoryName }: Props) {
   try {
     const model = "whisper-1";
 
@@ -28,8 +23,7 @@ export default async function transcribeAudio({
         file: readStream,
         model,
         temperature: 0,
-        prompt:
-          "The audio may contain silence. Do not make up words or symbols. Don't add anything additional.",
+        prompt: "The audio may contain silence. Do not make up words or symbols. Don't add anything additional.",
       })
     );
 
@@ -43,6 +37,7 @@ export default async function transcribeAudio({
       categoryName,
       units,
       userId,
+      userType: "user",
     });
 
     return response.text;

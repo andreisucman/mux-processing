@@ -92,10 +92,21 @@ async function blurProcessor(imageBuffer: Buffer, masks: BlurDot[]) {
 
   for (const mask of masks) {
     const { x, y, originalWidth: maskWidth, originalHeight: maskHeight, scaleX, scaleY, angle } = mask;
+    if (maskWidth <= 0 || maskHeight <= 0) {
+      throw new Error(`Invalid mask dimensions: ${JSON.stringify(mask)}`);
+    }
+
+    const safeScaleX = Math.abs(scaleX);
+    const safeScaleY = Math.abs(scaleY);
+
     const safeX = Math.round(x);
     const safeY = Math.round(y);
-    const finalWidth = Math.round(maskWidth * scaleX);
-    const finalHeight = Math.round(maskHeight * scaleY);
+    const finalWidth = Math.max(1, Math.round(maskWidth * safeScaleX));
+    const finalHeight = Math.max(1, Math.round(maskHeight * safeScaleY));
+
+    if (safeX + finalWidth > width || safeY + finalHeight > height) {
+      throw new Error(`Extraction area exceeds image bounds`);
+    }
 
     const region = await sharp(imageBuffer)
       .extract({
