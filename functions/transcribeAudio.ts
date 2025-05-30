@@ -10,7 +10,7 @@ import doWithRetries from "@/helpers/doWithRetries.js";
 type Props = {
   duration: number;
   userId: string;
-  readStream: ReadStream;
+  readStream: ReadStream | any;
   categoryName: string;
 };
 

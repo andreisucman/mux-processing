@@ -7,7 +7,12 @@ import { promisify } from "util";
 import httpError from "@/helpers/httpError.js";
 
 const writeFileAsync = promisify(fs.writeFile);
-const unlinkAsync = promisify(fs.unlink);
+
+async function safeDelete(file: string): Promise<void> {
+  try {
+    await fs.promises.rm(file, { force: true });
+  } catch {}
+}
 
 async function getAudioDuration(buffer: Buffer): Promise<number | unknown> {
   const tempFilePath = path.join(os.tmpdir(), `temp_file_${nanoid()}`);
@@ -38,9 +43,7 @@ async function getAudioDuration(buffer: Buffer): Promise<number | unknown> {
 
     return duration;
   } finally {
-    // Clean up the temporary files
-    await unlinkAsync(tempFilePath);
-    await unlinkAsync(tempWavPath);
+    await Promise.all([safeDelete(tempFilePath), safeDelete(tempWavPath)]);
   }
 }
 

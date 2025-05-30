@@ -28,7 +28,13 @@ app.use(metricCapturer);
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(","),
   methods: ["GET", "POST", "OPTIONS", "HEAD"],
-  allowedHeaders: ["Content-Type", "Authorization", "UserId", "X-CSRF-Token", "Access-Control-Allow-Credentials"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "UserId",
+    "X-CSRF-Token",
+    "Access-Control-Allow-Credentials",
+  ],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -52,7 +58,7 @@ app.use("/metrics", metrics);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use("/transcribe", checkAccess, transcribe);
+app.use("/transcribe", transcribe);
 
 app.use(timeout("5m"));
 

@@ -27,11 +27,13 @@ route.post(
     try {
       let audioFile = req.file;
 
-      if (!audioFile) audioFile = req.body.audioFile;
-
       if (!audioFile) {
-        res.status(400).json({ message: "No audio file provided" });
-        return;
+        audioFile = req.body.audioFile;
+
+        if (!audioFile) {
+          res.status(400).json({ message: "No audio file provided" });
+          return;
+        }
       }
 
       let audioBuffer = audioFile.buffer;
@@ -41,7 +43,8 @@ route.post(
           `https://${process.env.DO_SPACES_BUCKET_NAME}`
         );
 
-        if (!validOrigin) throw httpError(`Invalid audio origin: ${audioFile}`);
+        if (!validOrigin && process.env.ENV !== "dev")
+          throw httpError(`Invalid audio origin: ${audioFile}`);
 
         audioBuffer = await fromUrlToBuffer(audioFile);
       }
